@@ -1,0 +1,1496 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MetroHealth GIS - Sistem Informasi Geografis Rumah Sakit Kota Metro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* --- VARIABEL WARNA TEMA (MERAH HATI & CREAM) --- */
+        :root {
+            --merah-gelap: #660000;
+            --merah-hati: #800000;
+            --merah-crimson: #D32F2F;
+            --cream-bg: #FFFDF6;
+            --cream-muda: #FDFBF7;
+            --cream-kontras: #F4EFE3;
+            --navy-dark: #0F172A;
+            --text-dark: #1E293B;
+            --text-muted: #64748B;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--cream-bg);
+            color: var(--text-dark);
+            min-height: 100vh;
+            display: flex;
+            flex-content: column;
+            flex-direction: column;
+        }
+
+        /* --- 1. HEADER UTAMA --- */
+        header {
+            background-color: #ffffff;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            padding: 10px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-logo {
+            width: 45px;
+            height: 45px;
+            background-color: var(--merah-hati);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 20px;
+        }
+
+        .brand-text h1 {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-dark);
+            line-height: 1.2;
+        }
+
+        .brand-text p {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        /* Navigasi Menu */
+        nav {
+            display: flex;
+            gap: 6px;
+        }
+
+        .nav-link {
+            padding: 8px 16px;
+            text-decoration: none;
+            color: var(--text-dark);
+            font-weight: 600;
+            font-size: 14px;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            border-bottom: 2px solid transparent;
+        }
+
+        .nav-link:hover {
+            color: var(--merah-crimson);
+            background-color: var(--cream-kontras);
+        }
+
+        .nav-link.active {
+            color: var(--merah-crimson);
+            border-bottom: 2px solid var(--merah-crimson);
+            border-radius: 6px 6px 0 0;
+            background-color: rgba(211, 47, 47, 0.05);
+        }
+
+        /* Search Bar */
+        .header-search {
+            position: relative;
+            width: 200px;
+        }
+
+        .header-search input {
+            width: 100%;
+            padding: 8px 12px 8px 36px;
+            border: 1px solid #E2E8F0;
+            border-radius: 20px;
+            font-size: 13px;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .header-search input:focus {
+            border-color: var(--merah-hati);
+            width: 240px;
+        }
+
+        .header-search i {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        /* Jargon Banner Kanan */
+        .jargon-banner {
+            background: linear-gradient(135deg, rgba(128,0,0,0.9), rgba(102,0,0,0.9)), url('Assets/Kota_Metro.jpg');
+            background-size: cover;
+            background-position: center;
+            padding: 8px 14px;
+            border-radius: 8px;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.2);
+            max-width: 260px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .jargon-text {
+            color: #FFFFFF;
+            font-size: 10px;
+            font-weight: 600;
+            font-style: italic;
+            text-align: center;
+            line-height: 1.3;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+
+        /* --- CONTAINER UTAMA & HALAMAN --- */
+        main {
+            flex: 1;
+            padding: 30px 24px;
+            max-width: 1400px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        .page-content {
+            display: none;
+        }
+
+        .page-content.active {
+            display: block;
+            animation: fadeIn 0.4s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* --- HALAMAN 1: PROFIL --- */
+        .profile-container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+            border: 1px solid var(--cream-kontras);
+        }
+
+        .profile-title {
+            color: var(--merah-gelap);
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            border-bottom: 3px solid var(--merah-hati);
+            padding-bottom: 8px;
+            display: inline-block;
+        }
+
+        .tab-menu {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+            border-bottom: 1px solid var(--cream-kontras);
+            padding-bottom: 10px;
+        }
+
+        .tab-btn {
+            padding: 10px 20px;
+            border: none;
+            background: var(--cream-muda);
+            color: var(--text-dark);
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.3s;
+            border: 1px solid var(--cream-kontras);
+        }
+
+        .tab-btn.active {
+            background-color: var(--merah-hati);
+            color: white;
+            border-color: var(--merah-hati);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: flex;
+            gap: 30px;
+            animation: fadeIn 0.3s;
+        }
+
+        .profile-photo {
+            width: 200px;
+            height: 260px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 4px solid white;
+            box-shadow: 0 4px 12px rgba(128,0,0,0.15);
+        }
+
+        .biodata-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .biodata-table td {
+            padding: 12px 15px;
+            font-size: 15px;
+            border-bottom: 1px solid #F1F5F9;
+        }
+
+        .biodata-table td:first-child {
+            font-weight: 600;
+            color: var(--text-muted);
+            width: 200px;
+        }
+
+        .biodata-table td:last-child {
+            color: var(--text-dark);
+            font-weight: 500;
+        }
+
+        /* Timeline Riwayat Pendidikan */
+        .timeline {
+            position: relative;
+            max-width: 800px;
+            margin: 0 auto;
+            padding-left: 30px;
+        }
+
+        .timeline::after {
+            content: '';
+            position: absolute;
+            width: 3px;
+            background-color: var(--merah-hati);
+            top: 0;
+            bottom: 0;
+            left: 7px;
+        }
+
+        .timeline-item {
+            padding: 10px 20px;
+            position: relative;
+            background-color: white;
+            margin-bottom: 15px;
+        }
+
+        .timeline-item::after {
+            content: '';
+            position: absolute;
+            width: 15px;
+            height: 15px;
+            left: -29px;
+            background-color: var(--cream-bg);
+            border: 4px solid var(--merah-crimson);
+            top: 12px;
+            border-radius: 50%;
+            z-index: 1;
+        }
+
+        .time-year {
+            font-weight: 700;
+            color: var(--merah-crimson);
+            font-size: 14px;
+        }
+
+        .time-text {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-top: 2px;
+        }
+
+        /* --- HALAMAN 2: BERANDA --- */
+        .hero-section {
+            position: relative;
+            height: 250px;
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        .hero-bg {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(rgba(102,0,0,0.4), rgba(102,0,0,0.4)), url('Assets/Kota_Metro.jpg');
+            background-size: cover;
+            background-position: center;
+            filter: blur(4px);
+            transform: scale(1.05);
+            z-index: 1;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            color: white;
+            padding: 20px;
+        }
+
+        .hero-logo {
+            width: 70px;
+            height: 70px;
+            margin-bottom: 12px;
+            filter: drop-shadow(0px 2px 8px rgba(0,0,0,0.3));
+        }
+
+        .typewriter-container {
+            min-height: 30px;
+        }
+
+        .typewriter-text {
+            font-size: 20px;
+            font-weight: 700;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.6);
+            border-right: 2px solid white;
+            white-space: nowrap;
+            animation: blink 0.75s step-end infinite;
+            display: inline-block;
+        }
+
+        @keyframes blink {
+            from, to { border-color: transparent }
+            50% { border-color: white; }
+        }
+
+        /* Beranda Tengah split */
+        .main-intro {
+            display: grid;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .intro-img {
+            width: 100%;
+            height: 320px;
+            object-fit: cover;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            border: 5px solid white;
+        }
+
+        .intro-text {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+            border: 1px solid var(--cream-kontras);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .intro-text h2 {
+            color: var(--merah-gelap);
+            font-size: 22px;
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+
+        .intro-text p {
+            font-size: 15px;
+            line-height: 1.6;
+            color: var(--text-dark);
+            text-align: justify;
+        }
+
+        /* Grid 4 Kotak Beranda */
+        .info-grid-4 {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .grid-card {
+            background: white;
+            padding: 24px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.01);
+            border-top: 4px solid var(--merah-hati);
+            border-left: 1px solid var(--cream-kontras);
+            border-right: 1px solid var(--cream-kontras);
+            border-bottom: 1px solid var(--cream-kontras);
+            transition: transform 0.3s;
+        }
+
+        .grid-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .grid-card i {
+            font-size: 28px;
+            color: var(--merah-crimson);
+            margin-bottom: 12px;
+        }
+
+        .grid-card h4 {
+            font-size: 15px;
+            color: var(--text-dark);
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+
+        .grid-card p {
+            font-size: 13px;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
+        /* --- HALAMAN 3: PETA WEBGIS --- */
+        .webgis-layout {
+            display: grid;
+            grid-template-columns: 280px 1fr 320px;
+            gap: 20px;
+            height: 600px;
+        }
+
+        .gis-panel {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+            border: 1px solid var(--cream-kontras);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .panel-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--merah-gelap);
+            margin-bottom: 15px;
+            border-bottom: 1px solid var(--cream-kontras);
+            padding-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Desain Filter */
+        .filter-group {
+            margin-bottom: 18px;
+        }
+
+        .filter-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        .filter-select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #E2E8F0;
+            border-radius: 6px;
+            font-size: 13px;
+            outline: none;
+            background-color: var(--cream-muda);
+        }
+
+        .filter-pills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .pill-btn {
+            padding: 6px 12px;
+            border: 1px solid #E2E8F0;
+            background: white;
+            font-size: 12px;
+            font-weight: 500;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .pill-btn.active {
+            background: var(--merah-hati);
+            color: white;
+            border-color: var(--merah-hati);
+        }
+
+        /* Widget Peta */
+        #map-canvas {
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+            border: 1px solid var(--cream-kontras);
+            z-index: 1;
+        }
+
+        /* Sidebar Jarak Kanti */
+        .coordinate-widget {
+            background: var(--cream-muda);
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-family: monospace;
+            margin-bottom: 15px;
+            border: 1px dashed var(--merah-hati);
+            word-break: break-all;
+        }
+
+        .distance-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .distance-card {
+            background: var(--cream-muda);
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid var(--cream-kontras);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .distance-card:hover {
+            border-color: var(--merah-hati);
+            background: white;
+        }
+
+        .dist-rs-name {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 4px;
+        }
+
+        .dist-metrics {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: var(--merah-crimson);
+            font-weight: 600;
+        }
+
+        /* Pop Up Peta Desain Custom */
+        .popup-container {
+            max-width: 240px;
+        }
+
+        .popup-img {
+            width: 100%;
+            height: 110px;
+            object-fit: cover;
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+
+        .popup-meta {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .popup-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--merah-hati);
+            margin: 2px 0 6px 0;
+        }
+
+        .popup-info-line {
+            font-size: 12px;
+            margin-bottom: 3px;
+        }
+
+        .popup-btn-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            margin-top: 10px;
+        }
+
+        .popup-btn {
+            padding: 6px;
+            text-align: center;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .btn-telp { background: #E2E8F0; color: var(--text-dark); }
+        .btn-maps { background: var(--merah-hati); color: white; }
+
+        /* --- HALAMAN 4: ENSIKLOPEDIA INFORMASI --- */
+        .info-selector-bar {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 12px;
+            margin-bottom: 25px;
+            border-bottom: 1px solid var(--cream-kontras);
+        }
+
+        .selector-btn {
+            padding: 10px 16px;
+            background: white;
+            border: 1px solid var(--cream-kontras);
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.3s;
+        }
+
+        .selector-btn.active {
+            background: var(--merah-hati);
+            color: white;
+            border-color: var(--merah-hati);
+        }
+
+        .detail-rs-grid {
+            display: grid;
+            grid-template-columns: 1.2fr 1fr;
+            gap: 30px;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+            border: 1px solid var(--cream-kontras);
+        }
+
+        .detail-main-img {
+            width: 100%;
+            height: 350px;
+            object-fit: cover;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+
+        .detail-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--merah-gelap);
+            margin-bottom: 5px;
+        }
+
+        .detail-badge-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .badge-info {
+            padding: 4px 10px;
+            font-size: 11px;
+            font-weight: 600;
+            border-radius: 4px;
+            background-color: var(--cream-kontras);
+            color: var(--text-dark);
+        }
+
+        .badge-info.bpjs-ya {
+            background-color: #DCFCE7;
+            color: #15803D;
+        }
+
+        .detail-desc {
+            font-size: 14px;
+            line-height: 1.6;
+            text-align: justify;
+            color: var(--text-dark);
+        }
+
+        .stats-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .stats-table th {
+            background-color: var(--merah-gelap);
+            color: white;
+            padding: 10px 12px;
+            text-align: left;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .stats-table td {
+            padding: 10px 12px;
+            font-size: 13px;
+            border-bottom: 1px solid var(--cream-kontras);
+        }
+
+        .stats-table tr:nth-child(even) {
+            background-color: var(--cream-muda);
+        }
+
+        .section-sub-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin: 20px 0 10px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-left: 3px solid var(--merah-hati);
+            padding-left: 8px;
+        }
+
+        /* --- FOOTER INFORMASI LEBIH LANJUT --- */
+        footer {
+            background-color: var(--navy-dark);
+            color: #E2E8F0;
+            padding: 40px 24px 20px 24px;
+            margin-top: auto;
+            border-top: 5px solid var(--merah-hati);
+        }
+
+        .footer-top {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1.5fr 1fr 1fr;
+            gap: 40px;
+            padding-bottom: 30px;
+            border-bottom: 1px solid #334155;
+        }
+
+        .footer-logo-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            color: #ffffff;
+        }
+
+        .footer-desc {
+            font-size: 12px;
+            line-height: 1.6;
+            color: #94A3B8;
+            text-align: justify;
+            margin-bottom: 15px;
+        }
+
+        .footer-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .footer-links {
+            list-style: none;
+        }
+
+        .footer-links li {
+            margin-bottom: 10px;
+        }
+
+        .footer-links a {
+            color: #94A3B8;
+            text-decoration: none;
+            font-size: 13px;
+            transition: color 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .footer-links a:hover {
+            color: var(--merah-crimson);
+        }
+
+        .footer-contact {
+            font-size: 13px;
+            color: #94A3B8;
+            line-height: 1.5;
+        }
+
+        .footer-contact p {
+            margin-bottom: 10px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .footer-contact i {
+            color: var(--merah-crimson);
+            margin-top: 3px;
+        }
+
+        .footer-bottom {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding-top: 20px;
+            text-align: center;
+            font-size: 11px;
+            color: #64748B;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-left">
+            <div class="brand-logo"><i class="fa-solid fa-map-location-dot"></i></div>
+            <div class="brand-text">
+                <h1>MetroHealth GIS</h1>
+                <p>Dinas Kesehatan Kota Metro</p>
+            </div>
+        </div>
+
+        <nav>
+            <a href="#" class="nav-link" onclick="switchPage('profil', this)">Profil</a>
+            <a href="#" class="nav-link active" onclick="switchPage('beranda', this)">Beranda</a>
+            <a href="#" class="nav-link" onclick="switchPage('webgis', this)">Peta WebGIS</a>
+            <a href="#" class="nav-link" onclick="switchPage('informasi', this)">Informasi RS</a>
+        </nav>
+
+        <div class="header-search">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="global-search" placeholder="Cari Rumah Sakit..." onkeyup="handleGlobalSearch(event)">
+        </div>
+
+        <div class="jargon-banner">
+            <p class="jargon-text">"Bridging Spatial Literacy and Healthcare Accessibility."</p>
+        </div>
+    </header>
+
+    <main>
+
+        <div id="page-profil" class="page-content">
+            <div class="profile-container">
+                <h2 class="profile-title">Profil Peneliti</h2>
+                
+                <div class="tab-menu">
+                    <button class="tab-btn active" onclick="switchTab('biodata', this)">Biodata Utama</button>
+                    <button class="tab-btn" onclick="switchTab('pendidikan', this)">Riwayat Pendidikan</button>
+                    <button class="tab-btn" onclick="switchTab('riset', this)">Fokus Kajian & Kerangka Kerja Spasial</button>
+                </div>
+
+                <div id="tab-biodata" class="tab-content active">
+                    <img src="../Assets/fotodiri.jpeg" alt="Foto Jihan" class="profile-photo" onerror="this.src='Assets/fotodiri.jpeg'">
+                    <table class="biodata-table">
+                        <tr><td>Nama Lengkap</td><td>Jihan Dzakhiya Faadhila</td></tr>
+                        <tr><td>NPM</td><td>2313034063</td></tr>
+                        <tr><td>Program Studi</td><td>Pendidikan Geografi</td></tr>
+                        <tr><td>Facultas</td><td>FKIP</td></tr>
+                        <tr><td>Perguruan Tinggi</td><td>Universitas Lampung</td></tr>
+                    </table>
+                </div>
+
+                <div id="tab-pendidikan" class="tab-content">
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <p class="time-year">2023 - Sekarang</p>
+                            <p class="time-text">Universitas Lampung</p>
+                        </div>
+                        <div class="timeline-item">
+                            <p class="time-year">2020 - 2023</p>
+                            <p class="time-text">SMA Negeri 3 Metro</p>
+                        </div>
+                        <div class="timeline-item">
+                            <p class="time-year">2017 - 2020</p>
+                            <p class="time-text">SMP Negeri 3 Metro</p>
+                        </div>
+                        <div class="timeline-item">
+                            <p class="time-year">2011 - 2017</p>
+                            <p class="time-text">SD Negeri 4 Metro Utara</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-riset" class="tab-content">
+                    <div style="line-height: 1.6; font-size: 15px;">
+                        <p style="margin-bottom: 15px; text-align: justify;"><strong>Alasan Pemilihan Wilayah Kajian:</strong> Kota Metro dipilih sebagai lokus pengembangan basis data spasial faskes makro karena posisinya sebagai kota otonom rujukan medis pusat pelayanan wilayah regional Lampung Tengah dan Timur. Analisis spasial kedekatan jarak esensial untuk mengevaluasi efisiensi aksesibilitas keruangan penanganan darurat medik.</p>
+                        <p><strong>Kompetensi Teknis Kartografi & Analisis Geografis:</strong></p>
+                        <ul style="margin-left: 20px; margin-top: 10px;">
+                            <li>QGIS Spatial Analysis (Vector Analysis, Buffering, Heatmap)</li>
+                            <li>WebGIS Development (HTML5, CSS Grid/Flexbox, Javascript DOM, Leaflet API)</li>
+                            <li>Global Positioning System (GPS) Surveying & Field Data Processing</li>
+                            <li>Spatial Statistics & Demographic Geographics</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="page-beranda" class="page-content active">
+            <div class="hero-section">
+                <div class="hero-bg"></div>
+                <div class="hero-content">
+                    <img src="Assets/logokotametro.png" alt="Logo Kota Metro" class="hero-logo">
+                    <div class="typewriter-container">
+                        <span id="typewriter" class="typewriter-text"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="main-intro">
+                <img src="../Assets/KOTAMETRO2.jpg" alt="Kota Metro" class="intro-img" onerror="this.src='Assets/Kota_Metro.jpg'">
+                <div class="intro-text">
+                    <h2>Sistem Informasi Spasial Layanan Kesehatan</h2>
+                    <p>Kota Metro sebagai salah satu pusat pertumbuhan perkotaan utama di Provinsi Lampung menuntut ketersediaan infrastruktur pelayanan publik yang tangguh, terukur, dan mudah diakses. Portal WebGIS ini dirancang secara khusus untuk memetakan distribusi 9 Rumah Sakit Utama di seluruh wilayah administratif Kota Metro. Melalui integrasi spasial, data sebaran fasilitas rujukan medis tidak hanya tersaji secara tekstual, melainkan divisualisasikan dalam kerangka spasial guna mendukung analisis pemetaan kesehatan masyarakat, evaluasi kesenjangan layanan keruangan, hingga optimalisasi akses darurat pertolongan medis rujukan utama.</p>
+                </div>
+            </div>
+
+            <div class="info-grid-4">
+                <div class="grid-card">
+                    <i class="fa-solid fa-earth-asia"></i>
+                    <h4>Cakupan Geografis</h4>
+                    <p>Luas Wilayah Kota Metro ± 68,74 Km² terdistribusi ke dalam 5 kecamatan administrasi.</p>
+                </div>
+                <div class="grid-card">
+                    <i class="fa-solid fa-hospital"></i>
+                    <h4>Objek Pemetaan</h4>
+                    <p>Integrasi database spasial presisi pada 9 Rumah Sakit Utama (Pemerintah, Swasta & RSIA).</p>
+                </div>
+                <div class="grid-card">
+                    <i class="fa-solid fa-route"></i>
+                    <h4>Metode Analisis</h4>
+                    <p>Penghitungan matriks jarak lurus waktu nyata menggunakan algoritma Haversine Formula via Sensor GPS.</p>
+                </div>
+                <div class="grid-card">
+                    <i class="fa-solid fa-database"></i>
+                    <h4>Basis Data Sah</h4>
+                    <p>Atribut bersumber resmi dari Registrasi Faskes Dinas Kesehatan Kota Metro & Kemenkes RI.</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="page-webgis" class="page-content">
+            <div class="webgis-layout">
+                <div class="gis-panel">
+                    <h3 class="panel-title">Saring Data Spasial</h3>
+                    
+                    <div class="filter-group">
+                        <label class="filter-label">Wilayah Kecamatan</label>
+                        <select id="filter-kecamatan" class="filter-select" onchange="applyFilters()">
+                            <option value="all">Semua Kecamatan</option>
+                            <option value="Metro Pusat">Metro Pusat</option>
+                            <option value="Metro Timur">Metro Timur</option>
+                            <option value="Metro Barat">Metro Barat</option>
+                            <option value="Metro Selatan">Metro Selatan</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label class="filter-label">Status Manajemen</label>
+                        <div class="filter-pills" id="filter-jenis">
+                            <button class="pill-btn active" onclick="setPillFilter('jenis', 'all', this)">Semua</button>
+                            <button class="pill-btn" onclick="setPillFilter('jenis', 'RSUD', this)">RSUD</button>
+                            <button class="pill-btn" onclick="setPillFilter('jenis', 'RS', this)">RS Swasta</button>
+                            <button class="pill-btn" onclick="setPillFilter('jenis', 'RSIA', this)">RSIA</button>
+                        </div>
+                    </div>
+
+                    <div class="filter-group">
+                        <label class="filter-label">Kemitraan Jaminan BPJS</label>
+                        <div class="filter-pills" id="filter-bpjs">
+                            <button class="pill-btn active" onclick="setPillFilter('bpjs', 'all', this)">Semua</button>
+                            <button class="pill-btn" onclick="setPillFilter('bpjs', 'Melayani', this)">Ya</button>
+                            <button class="pill-btn" onclick="setPillFilter('bpjs', 'Tidak Melayani', this)">Tidak</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="map-canvas"></div>
+
+                <div class="gis-panel">
+                    <h3 class="panel-title">Aksesibilitas Jarak GPS</h3>
+                    <div class="coordinate-widget" id="user-coord">
+                        Melacak lokasi koordinat perangkat kamu...
+                    </div>
+                    <div class="distance-list" id="distance-cards-container">
+                        </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="page-informasi" class="page-content">
+            <div class="info-selector-bar" id="info-rs-selectors">
+                </div>
+            
+            <div id="rs-detail-display">
+                </div>
+        </div>
+
+    </main>
+
+    <footer>
+        <div class="footer-top">
+            <div>
+                <div class="footer-logo-row">
+                    <i class="fa-solid fa-map-location-dot" style="font-size: 20px; color: var(--merah-crimson);"></i>
+                    <h3 style="font-size: 16px; font-weight: 700;">METROHEALTH GIS</h3>
+                </div>
+                <p class="footer-desc">
+                    Sistem Informasi Geografis (WebGIS) ini mengintegrasikan pemetaan spasial interaktif dan analisis jangkauan kedekatan (Proximity Analysis) untuk menyajikan visualisasi sebaran fasilitas kesehatan makro di Kota Metro, guna mendukung edukasi geografis dan keterbukaan informasi pelayanan publik.
+                </p>
+            </div>
+            <div>
+                <h4 class="footer-title">Tautan Eksternal Resmi</h4>
+                <ul class="footer-links">
+                    <li><a href="https://dinkes.metrokota.go.id" target="_blank"><i class="fa-solid fa-circle-nodes"></i> Dinas Kesehatan Kota Metro</a></li>
+                    <li><a href="https://kemkes.go.id" target="_blank"><i class="fa-solid fa-circle-nodes"></i> Kementerian Kesehatan RI</a></li>
+                    <li><a href="https://metrokota.go.id" target="_blank"><i class="fa-solid fa-circle-nodes"></i> Web Resmi Kota Metro</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="footer-title">Sekretariat Hubungi Kami</h4>
+                <div class="footer-contact">
+                    <p><i class="fa-solid fa-location-dot"></i> Jl. Ki Hajar Dewantara No.1, Iringmulyo, Metro Timur, Kota Metro, Lampung 34112</p>
+                    <p><i class="fa-solid fa-envelope"></i> dinkes@metrokota.go.id</p>
+                    <p><i class="fa-solid fa-phone"></i> (0725) 41532</p>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <i class="fa-regular fa-copyright"></i> 2026 metrohealth-gis • Jihan Dzakhiya Faadhila • Universitas Lampung. All rights reserved.
+        </div>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+    <script>
+        // --- DATA UTAMA MASTER 9 RUMAH SAKIT KOTA METRO (MENGGUNAKAN DOUBLE-PATH FALLBACK BILA ERROR) ---
+        const rumahSakitData = [
+            {
+                kode: "1872016", nama: "RSUD Jend. Ahmad Yani", jenis: "RSUD", tipe: "B", kecamatan: "Metro Pusat",
+                lat: -5.115702, lng: 105.310097, alamat: "Jalan Jend. A. Yani No.13, Imopuro, Kec. Metro Pusat, Kota Metro, Lampung 34124",
+                bpjs: "Melayani", bed: "240 Bed", img: "../Assets/RS_JendAhmadYani.jpg", altImg: "Assets/RS_JendAhmadYani.jpg",
+                desc: "RSUD Jend. Ahmad Yani merupakan rumah sakit rujukan utama tipe B terbesar di Kota Metro. Berfungsi sebagai pusat rujukan medis lintas kabupaten sekitar, dilengkapi fasilitas perawatan ICU komprehensif, instalasi bedah terpadu, dan poliklinik sub-spesialis yang sangat lengkap.",
+                sdm: { dokterSp: 34, dokterUmum: 18, perawat: 142, bidan: 20 },
+                kamar: { vip: 20, kelas1: 40, kelas2: 60, kelas3: 100, isolasi: 20 },
+                layanan: ["IGD 24 Jam", "Poli Bedah Tumor", "Hemodialisa (Cuci Darah)", "CT Scan 64 Slices", "Poli Jantung & Pembuluh Darah"]
+            },
+            {
+                kode: "1872031", nama: "RS Islam Metro", jenis: "RS", tipe: "D", kecamatan: "Metro Timur",
+                lat: -5.105789, lng: 105.333197, alamat: "Jalan Jend. AH. Nasution No.250, Yosodadi, Kec. Metro Timur, Kota Metro, Lampung 34111",
+                bpjs: "Melayani", bed: "55 Bed", img: "../Assets/RS_Islam.jpg", altImg: "Assets/RS_Islam.jpg",
+                desc: "RS Islam Metro menyajikan pelayanan prima bernuansa Islami berlokasi strategis di pintu masuk utama koridor Metro Timur. Menyediakan fasilitas rawat inap memadai dan poliklinik umum serta spesialis anak maupun kandungan dengan aksesibilitas tinggi bagi pemegang kartu jaminan.",
+                sdm: { dokterSp: 8, dokterUmum: 6, perawat: 38, bidan: 12 },
+                kamar: { vip: 4, kelas1: 10, kelas2: 15, kelas3: 22, isolasi: 4 },
+                layanan: ["IGD Trauma Scape", "Poli Kebidanan & Kandungan", "Poli Kesehatan Anak", "Fisioterapi Medis", "Laboratorium Klinik"]
+            },
+            {
+                kode: "1871020", nama: "RS Mardi Waluyo", jenis: "RS", tipe: "C", kecamatan: "Metro Pusat",
+                lat: -5.118311, lng: 105.296408, alamat: "Jalan Jendral Sudirman No.156, Metro, Kec. Metro Pusat, Kota Metro, Lampung 34125",
+                bpjs: "Melayani", bed: "124 Bed", img: "../Assets/RS_MardiWaluyo.jpg", altImg: "Assets/RS_MardiWaluyo.jpg",
+                desc: "RS Mardi Waluyo adalah salah satu faskes swasta tertua penuh historis pengabdian panjang di Metro Pusat. Menyediakan layanan klasifikasi kelas C dengan keunggulan penanganan poliklinik saraf, rehabilitasi medis, serta kemitraan BPJS Kesehatan yang terjalin erat.",
+                sdm: { dokterSp: 16, dokterUmum: 10, perawat: 82, bidan: 14 },
+                kamar: { vip: 12, kelas1: 24, kelas2: 30, kelas3: 50, isolasi: 8 },
+                layanan: ["Instalasi Gawat Darurat", "Poli Saraf & Stroke Center", "Poli Orthopedi (Bedah Tulang)", "Rehabilitasi Medik Terpadu", "Apotek 24 Jam"]
+            },
+            {
+                kode: "1872042", nama: "RS Muhammadiyah Metro", jenis: "RS", tipe: "C", kecamatan: "Metro Barat",
+                lat: -5.135017, lng: 105.289763, alamat: "Jalan SoekarnoH atta No.42, Mulyojati, Kec. Metro Barat, Kota Metro, Lampung 34125",
+                bpjs: "Melayani", bed: "152 Bed", img: "../Assets/RS_Muhammadiyah.jpeg", altImg: "Assets/RS_Muhammadiyah.jpeg",
+                desc: "RS Muhammadiyah Metro merupakan pilar utama faskes di Metro Barat dengan kapasitas tampung rawat inap yang sangat masif. Terkenal unggul dalam pelayanan operasi katarak terpadu, pusat khitan modern, serta manajemen ruang kelas III berstandar KRIS yang nyaman.",
+                sdm: { dokterSp: 22, dokterUmum: 12, perawat: 98, bidan: 16 },
+                kamar: { vip: 15, kelas1: 30, kelas2: 40, kelas3: 60, isolasi: 7 },
+                layanan: ["IGD Resusitasi", "Poli Mata & Katarak Center", "Poli Bedah Umum", "USG 4 Dimensi", "Poli Penyakit Dalam"]
+            },
+            {
+                kode: "1872053", nama: "RSIA AMC Metro", jenis: "RSIA", tipe: "C", kecamatan: "Metro Pusat",
+                lat: -5.118572, lng: 105.309889, alamat: "Jalan Kunang No.15, Metro, Kec. Metro Pusat, Kota Metro, Lampung 34111",
+                bpjs: "Melayani", bed: "45 Bed", img: "../Assets/RS_AMC.png", altImg: "Assets/RS_AMC.png",
+                desc: "RSIA AMC Metro fokus melayani penanganan spesifik Ibu dan Anak di pusat keramaian Metro. Menyediakan penanganan persalinan berisiko tinggi (*high risk*), klinik fertilitas terpadu, penanganan intensif neonatus NICU/PICU, serta ditunjang lingkungan perawatan yang ramah psikologis anak.",
+                sdm: { dokterSp: 6, dokterUmum: 5, perawat: 24, bidan: 18 },
+                kamar: { vip: 8, kelas1: 10, kelas2: 12, kelas3: 12, isolasi: 3 },
+                layanan: ["Poliklinik Kebidanan", "Klinik Tumbuh Kembang Anak", "Ruang Perawatan Intensif NICU", "Persalinan Tanpa Rasa Sakit (ILA)", "Imunisasi Lengkap"]
+            },
+            {
+                kode: "1872065", nama: "RSIA Asih Metro", jenis: "RSIA", tipe: "C", kecamatan: "Metro Timur",
+                lat: -5.118367, lng: 105.313722, alamat: "Jalan Ahmad Yani No.52, Yosorejo, Kec. Metro Timur, Kota Metro, Lampung 34124",
+                bpjs: "Melayani", bed: "30 Bed", img: "../Assets/RSIA_Asih.jpg", altImg: "Assets/RSIA_Asih.jpg",
+                desc: "RSIA Asih Metro merupakan sarana pelayanan kesehatan ibu anak terpercaya di Yosorejo. Memberikan sentuhan pelayanan persalinan personal yang aman, konsultasi laktasi eksklusif, serta penanganan tumbuh kembang bayi prematur dengan sarana inkubator modern.",
+                sdm: { dokterSp: 4, dokterUmum: 4, perawat: 18, bidan: 15 },
+                kamar: { vip: 5, kelas1: 6, kelas2: 8, kelas3: 9, isolasi: 2 },
+                layanan: ["Emergency Obstetri Neonatal", "Poli Kandungan", "Konseling Laktasi & Menyusui", "Senam Hamil & Yoga Prenatal", "Poli Anak Terpadu"]
+            },
+            {
+                kode: "1872064", nama: "RSIA Permata Hati", jenis: "RSIA", tipe: "C", kecamatan: "Metro Timur",
+                lat: -5.114238, lng: 105.313650, alamat: "Jalan Jend. AH. Nasution No.34, Yosorejo, Kec. Metro Timur, Kota Metro, Lampung 34124",
+                bpjs: "Melayani", bed: "38 Bed", img: "../Assets/RS_PermataHati.jpeg", altImg: "Assets/RS_PermataHati.jpeg",
+                desc: "RSIA Permata Hati menyuguhkan kenyamanan ekstra dalam perawatan klinis medis ibu, bayi, dan anak. Memiliki keunggulan dokter spesialis anak stanby, ruang operasi steril modern untuk tindakan SC, serta poliklinik KB mandiri terintegrasi jaminan BPJS Kesehatan.",
+                sdm: { dokterSp: 5, dokterUmum: 4, perawat: 20, bidan: 14 },
+                kamar: { vip: 6, kelas1: 8, kelas2: 10, kelas3: 12, isolasi: 2 },
+                layanan: ["Poli Kandungan & Onkologi", "Bedah Sesar Kamar Operasi", "Poli Spesialis Anak", "Pemeriksaan USG Fetomaternal", "Baby Spa & Massage"]
+            },
+            {
+                kode: "1872066", nama: "RS Azizah Metro", jenis: "RS", tipe: "C", kecamatan: "Metro Pusat",
+                lat: -5.109686, lng: 105.309628, alamat: "Jalan KH. Hanafiah No.64, Imopuro, Kec. Metro Pusat, Kota Metro, Lampung 34124",
+                bpjs: "Tidak Melayani", bed: "60 Bed", img: "../Assets/RS_Azizah.jpg", altImg: "Assets/RS_Azizah.jpg",
+                desc: "RS Azizah Metro melayani pasien dengan sistem manajemen eksklusif terintegrasi di Metro Pusat. Fokus utama rumah sakit ini mengarah pada kecepatan pelayanan non-antre, fasilitas laboratorium diagnostik mutakhir mandiri, serta poliklinik spesialis penyakit dalam dan bedah umum.",
+                sdm: { dokterSp: 10, dokterUmum: 6, perawat: 40, bidan: 8 },
+                kamar: { vip: 10, kelas1: 15, kelas2: 15, kelas3: 16, isolasi: 4 },
+                layanan: ["IGD Non-Stop 24 Jam", "Poli Penyakit Dalam", "Poli Bedah Digestif", "Medical Check Up Eksklusif", "Laboratorium Otomatis"]
+            },
+            {
+                kode: "1872067", nama: "RSUD Sumbersari Bantul", jenis: "RS", tipe: "D", kecamatan: "Metro Selatan",
+                lat: -5.162030, lng: 105.295039, alamat: "Jalan Letjend Soeprapto No.4, Sumbersari, Kec. Metro Selatan, Kota Metro, Lampung 34124",
+                bpjs: "Tidak Melayani", bed: "40 Bed", img: "../Assets/RS_Sumbersari_Bantul.jpg", altImg: "Assets/RS_Sumbersari_Bantul.jpg",
+                desc: "RSUD Sumbersari Bantul adalah unit pelaksana teknis daerah sekunder pertahanan faskes di Metro Selatan. Menyediakan akses jangkauan rawat jalan serta inap utama bagi masyarakat suburban sekitar, memangkas jarak akses mobilitas menuju pusat perkotaan.",
+                sdm: { dokterSp: 6, dokterUmum: 6, perawat: 30, bidan: 10 },
+                kamar: { vip: 2, kelas1: 8, kelas2: 10, kelas3: 18, isolasi: 2 },
+                layanan: ["Instalasi Gawat Darurat", "Poli Umum & Lansia", "Poli Kesehatan Ibu Anak", "Poli Gigi & Mulut", "Pusat Penyuluhan Gizi"]
+            }
+        ];
+
+        // --- 1. LOGIKA SISTEM SWITCH HALAMAN (SPA NAVIGATION) ---
+        function switchPage(pageId, element) {
+            document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+            
+            document.getElementById('page-' + pageId).classList.add('active');
+            if(element) element.classList.add('active');
+            
+            if(pageId === 'webgis') {
+                setTimeout(() => { map.invalidateSize(); }, 200);
+            }
+        }
+
+        // --- 2. LOGIKA TAB INTERAKTIF DI HALAMAN PROFIL ---
+        function switchTab(tabId, button) {
+            const container = button.closest('.profile-container');
+            container.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            container.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            
+            document.getElementById('tab-' + tabId).classList.add('active');
+    button.classList.add('active');
+        }
+
+        // --- 3. ANIMASI TEKS MENGETIK (TYPEWRITER EFFECT) BERANDA ---
+        const textSequence = [
+            "Selamat Datang di Portal MetroHealth GIS",
+            "Sistem Informasi Geografis Sebaran Rumah Sakit Kota Metro"
+        ];
+        let sequenceIndex = 0;
+        let charIndex = 0;
+        let isDeleting = false;
+        const typewriterElement = document.getElementById('typewriter');
+
+        function doTypewriter() {
+            const currentFullText = textSequence[sequenceIndex];
+            if (isDeleting) {
+                typewriterElement.textContent = currentFullText.substring(0, charIndex - 1);
+                charIndex--;
+            } else {
+                typewriterElement.textContent = currentFullText.substring(0, charIndex + 1);
+                charIndex++;
+            }
+
+            let typeSpeed = isDeleting ? 30 : 70;
+
+            if (!isDeleting && charIndex === currentFullText.length) {
+                typeSpeed = 2500; 
+                isDeleting = true;
+            } else if (isDeleting && charIndex === 0) {
+                isDeleting = false;
+                sequenceIndex = (sequenceIndex + 1) % textSequence.length;
+                typeSpeed = 500;
+            }
+
+            setTimeout(doTypewriter, typeSpeed);
+        }
+        document.addEventListener("DOMContentLoaded", () => { doTypewriter(); });
+
+        // --- 4. ENGINE INVENTORI PETA LEAFLET (HALAMAN 3) ---
+        const map = L.map('map-canvas').setView([-5.1132, 105.3075], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        let activeMarkers = [];
+        let currentPillFilters = { jenis: 'all', bpjs: 'all' };
+        let userLocation = null;
+
+        function drawMarkers(dataList) {
+            activeMarkers.forEach(m => map.removeLayer(m));
+            activeMarkers = [];
+
+            dataList.forEach(rs => {
+                const marker = L.marker([rs.lat, rs.lng]).addTo(map);
+                
+                const popupContent = `
+                    <div class="popup-container">
+                        <img src="${rs.img}" class="popup-img" shortcuts="" onerror="this.src='${rs.altImg}'">
+                        <div class="popup-meta">${rs.jenis} • Kelas Tipe ${rs.tipe}</div>
+                        <h4 class="popup-title">${rs.nama}</h4>
+                        <div class="popup-info-line"><strong>Kode RS:</strong> ${rs.kode}</div>
+                        <div class="popup-info-line"><strong>Kecamatan:</strong> ${rs.kecamatan}</div>
+                        <div class="popup-info-line"><strong>Kapasitas:</strong> ${rs.bed}</div>
+                        <div class="popup-info-line"><strong>BPJS:</strong> ${rs.bpjs}</div>
+                        <div class="popup-btn-container">
+                            <a href="tel:${rs.kode}" class="popup-btn btn-telp"><i class="fa-solid fa-phone"></i> Telepon</a>
+                            <a href="https://www.google.com/maps/dir/?api=1&destination=${rs.lat},${rs.lng}" target="_blank" class="popup-btn btn-maps"><i class="fa-solid fa-diamond-turn-right"></i> Rute</a>
+                        </div>
+                    </div>
+                `;
+                
+                marker.bindPopup(popupContent);
+                marker.rsData = rs; 
+                activeMarkers.push(marker);
+            });
+        }
+
+        function setPillFilter(type, value, element) {
+            const container = element.parentElement;
+            container.querySelectorAll('.pill-btn').forEach(b => b.classList.remove('active'));
+            element.classList.add('active');
+            
+            currentPillFilters[type] = value;
+            applyFilters();
+        }
+
+        function applyFilters() {
+            const selectKec = document.getElementById('filter-kecamatan').value;
+            
+            const filteredData = rumahSakitData.filter(rs => {
+                const matchKec = (selectKec === 'all' || rs.kecamatan === selectKec);
+                const matchJenis = (currentPillFilters.jenis === 'all' || rs.jenis === currentPillFilters.jenis);
+                const matchBpjs = (currentPillFilters.bpjs === 'all' || rs.bpjs === currentPillFilters.bpjs);
+                return matchKec && matchJenis && matchBpjs;
+            });
+
+            drawMarkers(filteredData);
+            calculateDistances(); 
+        }
+
+        // --- 5. ALGORITMA HAVERSINE FORMULA ---
+        function haversineDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371; 
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+
+        function trackUserLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.watchPosition(position => {
+                    userLocation = {
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude
+                    };
+                    document.getElementById('user-coord').innerHTML = `
+                        <i class="fa-solid fa-location-crosshairs" style="color:var(--merah-crimson)"></i> 
+                        <strong>Koordinat Kamu:</strong> ${userLocation.lat.toFixed(6)}, ${userLocation.lng.toFixed(6)}
+                    `;
+                    if(window.userCircle) { map.removeLayer(window.userCircle); }
+                    window.userCircle = L.circle([userLocation.lat, userLocation.lng], {
+                        radius: 30, color: '#D32F2F', fillColor: '#D32F2F', fillOpacity: 0.4
+                    }).addTo(map).bindPopup("Lokasi Kamu Saat Ini");
+
+                    calculateDistances();
+                }, error => {
+                    document.getElementById('user-coord').textContent = "Akses GPS dinonaktifkan. Menggunakan posisi pusat simulasi Kota Metro.";
+                    simulateDefaultLocation();
+                });
+            } else {
+                simulateDefaultLocation();
+            }
+        }
+
+        function simulateDefaultLocation() {
+            userLocation = { lat: -5.1132, lng: 105.3075 };
+            document.getElementById('user-coord').innerHTML = `
+                <i class="fa-solid fa-triangle-exclamation"></i> 
+                <strong>Simulasi Lokasi:</strong> ${userLocation.lat.toFixed(6)}, ${userLocation.lng.toFixed(6)}
+            `;
+            calculateDistances();
+        }
+
+        function calculateDistances() {
+            if (!userLocation) return;
+            
+            const selectKec = document.getElementById('filter-kecamatan').value;
+            const validData = rumahSakitData.filter(rs => {
+                const matchKec = (selectKec === 'all' || rs.kecamatan === selectKec);
+                const matchJenis = (currentPillFilters.jenis === 'all' || rs.jenis === currentPillFilters.jenis);
+                const matchBpjs = (currentPillFilters.bpjs === 'all' || rs.bpjs === currentPillFilters.bpjs);
+                return matchKec && matchJenis && matchBpjs;
+            });
+
+            const distances = validData.map(rs => {
+                const dist = haversineDistance(userLocation.lat, userLocation.lng, rs.lat, rs.lng);
+                const timeEst = Math.round(dist * 3); 
+                return { ...rs, distance: dist, timeEst: timeEst };
+            });
+
+            distances.sort((a, b) => a.distance - b.distance);
+
+            const container = document.getElementById('distance-cards-container');
+            container.innerHTML = '';
+
+            if(distances.length === 0) {
+                container.innerHTML = '<div style="font-size:12px;color:var(--text-muted);text-align:center;padding:20px;">Tidak ada faskes rujukan yang cocok.</div>';
+                return;
+            }
+
+            distances.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'distance-card';
+                card.onclick = () => {
+                    const marker = activeMarkers.find(m => m.rsData.kode === item.kode);
+                    if(marker) {
+                        map.setView([item.lat, item.lng], 15);
+                        marker.openPopup();
+                    }
+                };
+                card.innerHTML = `
+                    <div class="dist-rs-name">${item.nama}</div>
+                    <div class="dist-metrics">
+                        <span><i class="fa-solid fa-road"></i> ${item.distance.toFixed(2)} Km</span>
+                        <span><i class="fa-solid fa-car"></i> ± ${item.timeEst === 0 ? 1 : item.timeEst} Menit</span>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // --- 6. ENGINE PROFILE ENSIKLOPEDIA DETIL RUMAH SAKIT ---
+        function initInfoPage() {
+            const selectorContainer = document.getElementById('info-rs-selectors');
+            selectorContainer.innerHTML = '';
+            
+            rumahSakitData.forEach((rs, index) => {
+                const btn = document.createElement('button');
+                btn.className = `selector-btn ${index === 0 ? 'active' : ''}`;
+                btn.textContent = rs.nama;
+                btn.onclick = () => {
+                    document.querySelectorAll('.selector-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    renderRSDetail(rs);
+                };
+                selectorContainer.appendChild(btn);
+            });
+
+            renderRSDetail(rumahSakitData[0]);
+        }
+
+        function renderRSDetail(rs) {
+            const display = document.getElementById('rs-detail-display');
+            display.innerHTML = `
+                <div class="detail-rs-grid">
+                    <div>
+                        <img src="${rs.img}" class="detail-main-img" onerror="this.src='${rs.altImg}'">
+                        <h3 class="section-sub-title"><i class="fa-solid fa-circle-info"></i> Deskripsi Profil Lengkap</h3>
+                        <p class="detail-desc">${rs.desc}</p>
+                    </div>
+                    <div>
+                        <h2 class="detail-title">${rs.nama}</h2>
+                        <div class="detail-badge-row">
+                            <span class="badge-info">Tipe Kelas ${rs.tipe}</span>
+                            <span class="badge-info">Kode: ${rs.kode}</span>
+                            <span class="badge-info ${rs.bpjs === 'Melayani' ? 'bpjs-ya' : ''}">${rs.bpjs} BPJS</span>
+                        </div>
+                        <p style="font-size:13px; color:var(--text-muted); margin-bottom:15px;">
+                            <i class="fa-solid fa-map-pin" style="color:var(--merah-crimson)"></i> ${rs.alamat}
+                        </p>
+
+                        <h3 class="section-sub-title"><i class="fa-solid fa-users-gear"></i> Sumber Daya Manusia Kesehatan</h3>
+                        <table class="stats-table" style="margin-bottom:15px;">
+                            <thead>
+                                <tr><th>Ketenagaan Medis</th><th>Jumlah Kuantitas Personel</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td>Dokter Spesialis</td><td><strong>${rs.sdm.dokterSp} Personel</strong></td></tr>
+                                <tr><td>Dokter Umum</td><td><strong>${rs.sdm.dokterUmum} Personel</strong></td></tr>
+                                <tr><td>Tenaga Perawat</td><td><strong>${rs.sdm.perawat} Personel</strong></td></tr>
+                                <tr><td>Tenaga Kebidanan</td><td><strong>${rs.sdm.bidan} Personel</strong></td></tr>
+                            </tbody>
+                        </table>
+
+                        <h3 class="section-sub-title"><i class="fa-solid fa-bed"></i> Kapasitas Ketersediaan Tempat Tidur</h3>
+                        <table class="stats-table" style="margin-bottom:15px;">
+                            <thead>
+                                <tr><th>Kategori Kelas Rawat Inap</th><th>Kapasitas Kamar (Bed)</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td>Kamar Utama VIP</td><td>${rs.kamar.vip} Bed</td></tr>
+                                <tr><td>Ruang Perawatan Kelas I</td><td>${rs.kamar.kelas1} Bed</td></tr>
+                                <tr><td>Ruang Perawatan Kelas II</td><td>${rs.kamar.kelas2} Bed</td></tr>
+                                <tr><td>Ruang Perawatan Kelas III (KRIS)</td><td>${rs.kamar.kelas3} Bed</td></tr>
+                                <tr><td>Ruang Isolasi Intensif</td><td>${rs.kamar.isolasi} Bed</td></tr>
+                            </tbody>
+                        </table>
+
+                        <h3 class="section-sub-title"><i class="fa-solid fa-star"></i> Poliklinik & Layanan Unggulan</h3>
+                        <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:5px;">
+                            ${rs.layanan.map(l => `<span class="badge-info" style="background-color:rgba(128,0,0,0.06); color:var(--merah-gelap); font-weight:500;">${l}</span>`).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // --- 7. GLOBAL SEARCH FIELD ENGINE ---
+        function handleGlobalSearch(event) {
+            const query = event.target.value.toLowerCase().trim();
+            if(!query) return;
+
+            if(event.key === 'Enter') {
+                const findRS = rumahSakitData.find(rs => rs.nama.toLowerCase().includes(query));
+                if(findRS) {
+                    switchPage('informasi', document.querySelectorAll('.nav-link')[3]);
+                    const targetBtn = Array.from(document.querySelectorAll('.selector-btn')).find(b => b.textContent === findRS.nama);
+                    if(targetBtn) {
+                        document.querySelectorAll('.selector-btn').forEach(b => b.classList.remove('active'));
+                        targetBtn.classList.add('active');
+                        renderRSDetail(findRS);
+                    }
+                    event.target.value = ''; 
+                } else {
+                    alert('Rumah sakit tidak ditemukan. Coba gunakan padanan kata lain.');
+                }
+            }
+        }
+
+        // --- RUN RUNNER ---
+        drawMarkers(rumahSakitData);
+        trackUserLocation();
+        initInfoPage();
+    </script>
+</body>
+</html>
+
+

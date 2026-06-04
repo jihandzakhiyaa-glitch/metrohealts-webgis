@@ -1,0 +1,1537 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MetroHealth GIS - Sistem Informasi Geografis Rumah Sakit Kota Metro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* --- VARIABEL WARNA TEMA (MERAH HATI & CREAM) --- */
+        :root {
+            --merah-gelap: #660000;
+            --merah-hati: #800000;
+            --merah-crimson: #D32F2F;
+            --cream-bg: #FFFDF6;
+            --cream-muda: #FDFBF7;
+            --cream-kontras: #F4EFE3;
+            --navy-dark: #0F172A;
+            --text-dark: #1E293B;
+            --text-muted: #64748B;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--cream-bg);
+            color: var(--text-dark);
+            min-height: 100vh;
+            display: flex;
+            flex-content: column;
+            flex-direction: column;
+        }
+
+        /* --- 1. HEADER UTAMA --- */
+        header {
+            background-color: #ffffff;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            padding: 10px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-logo {
+            width: 45px;
+            height: 45px;
+            background-color: var(--merah-hati);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 20px;
+        }
+
+        .brand-text h1 {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-dark);
+            line-height: 1.2;
+        }
+
+        .brand-text p {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        /* Navigasi Menu */
+        nav {
+            display: flex;
+            gap: 6px;
+        }
+
+        .nav-link {
+            padding: 8px 16px;
+            text-decoration: none;
+            color: var(--text-dark);
+            font-weight: 600;
+            font-size: 14px;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            border-bottom: 2px solid transparent;
+        }
+
+        .nav-link:hover {
+            color: var(--merah-crimson);
+            background-color: var(--cream-kontras);
+        }
+
+        .nav-link.active {
+            color: var(--merah-crimson);
+            border-bottom: 2px solid var(--merah-crimson);
+            border-radius: 6px 6px 0 0;
+            background-color: rgba(211, 47, 47, 0.05);
+        }
+
+        /* Search Bar */
+        .header-search {
+            position: relative;
+            width: 200px;
+        }
+
+        .header-search input {
+            width: 100%;
+            padding: 8px 12px 8px 36px;
+            border: 1px solid #E2E8F0;
+            border-radius: 20px;
+            font-size: 13px;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .header-search input:focus {
+            border-color: var(--merah-hati);
+            width: 240px;
+        }
+
+        .header-search i {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        /* Jargon Banner Kanan */
+        .jargon-banner {
+            background: linear-gradient(135deg, rgba(128,0,0,0.9), rgba(102,0,0,0.9)), url('Assets/Kota_Metro.jpg');
+            background-size: cover;
+            background-position: center;
+            padding: 8px 14px;
+            border-radius: 8px;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.2);
+            max-width: 260px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .jargon-text {
+            color: #FFFFFF;
+            font-size: 10px;
+            font-weight: 600;
+            font-style: italic;
+            text-align: center;
+            line-height: 1.3;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+
+        /* --- CONTAINER UTAMA & HALAMAN --- */
+        main {
+            flex: 1;
+            padding: 30px 24px;
+            max-width: 1400px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        .page-content {
+            display: none;
+        }
+
+        .page-content.active {
+            display: block;
+            animation: fadeIn 0.4s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* --- HALAMAN 1: PROFIL --- */
+        .profile-container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+            border: 1px solid var(--cream-kontras);
+        }
+
+        .profile-title {
+            color: var(--merah-gelap);
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            border-bottom: 3px solid var(--merah-hati);
+            padding-bottom: 8px;
+            display: inline-block;
+        }
+
+        .tab-menu {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+            border-bottom: 1px solid var(--cream-kontras);
+            padding-bottom: 10px;
+        }
+
+        .tab-btn {
+            padding: 10px 20px;
+            border: none;
+            background: var(--cream-muda);
+            color: var(--text-dark);
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.3s;
+            border: 1px solid var(--cream-kontras);
+        }
+
+        .tab-btn.active {
+            background-color: var(--merah-hati);
+            color: white;
+            border-color: var(--merah-hati);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: flex;
+            gap: 30px;
+            animation: fadeIn 0.3s;
+        }
+
+        .profile-photo {
+            width: 200px;
+            height: 260px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 4px solid white;
+            box-shadow: 0 4px 12px rgba(128,0,0,0.15);
+        }
+
+        .biodata-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .biodata-table td {
+            padding: 12px 15px;
+            font-size: 15px;
+            border-bottom: 1px solid #F1F5F9;
+        }
+
+        .biodata-table td:first-child {
+            font-weight: 600;
+            color: var(--text-muted);
+            width: 200px;
+        }
+
+        .biodata-table td:last-child {
+            color: var(--text-dark);
+            font-weight: 500;
+        }
+
+        /* Timeline Riwayat Pendidikan */
+        .timeline {
+            position: relative;
+            max-width: 800px;
+            margin: 0;          /* ← ubah dari 0 auto ke 0 */
+            padding-left: 30px;
+        }
+
+        .timeline::after {
+            content: '';
+            position: absolute;
+            width: 3px;
+            background-color: var(--merah-hati);
+            top: 0;
+            bottom: 0;
+            left: 7px;
+        }
+
+        .timeline-item {
+            padding: 10px 20px;
+            position: relative;
+            background-color: white;
+            margin-bottom: 15px;
+        }
+
+        .timeline-item::after {
+            content: '';
+            position: absolute;
+            width: 15px;
+            height: 15px;
+            left: -29px;
+            background-color: var(--cream-bg);
+            border: 4px solid var(--merah-crimson);
+            top: 12px;
+            border-radius: 50%;
+            z-index: 1;
+        }
+
+        .time-year {
+            font-weight: 700;
+            color: var(--merah-crimson);
+            font-size: 14px;
+        }
+
+        .time-text {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-top: 2px;
+        }
+
+        /* --- HALAMAN 2: BERANDA --- */
+        .hero-section {
+    position: relative;
+    height: 420px;        /* ← diperbesar dari 250px */
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 30px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+
+   .hero-bg {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: url('Assets/Kota_Metro.jpg');
+    background-size: cover;
+    background-position: center;
+    filter: blur(5px);        /* ← naikkan dari 2px ke 5px */
+    transform: scale(1.05);   /* ← naikkan juga scale agar tepi tidak putih */
+    z-index: 1;
+}
+
+    .hero-content {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    color: white;
+    padding: 20px;
+    background: transparent;
+    border-radius: 12px;
+    backdrop-filter: none;
+}
+
+
+        .hero-logo {
+            width: 70px;
+            height: 70px;
+            margin-bottom: 12px;
+            filter: drop-shadow(0px 2px 8px rgba(0,0,0,0.3));
+        }
+
+        .typewriter-container {
+            min-height: 30px;
+        }
+
+        .typewriter-text {
+    font-size: 20px;
+    font-weight: 700;
+    color: white;
+    text-shadow: 
+        -2px -2px 0 #660000,
+         2px -2px 0 #660000,
+        -2px  2px 0 #660000,
+         2px  2px 0 #660000;
+    border-right: 2px solid white;
+    white-space: nowrap;
+    animation: blink 0.75s step-end infinite;
+    display: inline-block;
+}
+
+        @keyframes blink {
+            from, to { border-color: transparent }
+            50% { border-color: white; }
+        }
+
+        /* Beranda Tengah split */
+        .main-intro {
+            display: grid;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .intro-img {
+            width: 100%;
+            height: 320px;
+            object-fit: cover;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            border: 5px solid white;
+        }
+
+        .intro-text {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+            border: 1px solid var(--cream-kontras);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .intro-text h2 {
+            color: var(--merah-gelap);
+            font-size: 22px;
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+
+        .intro-text p {
+            font-size: 15px;
+            line-height: 1.6;
+            color: var(--text-dark);
+            text-align: justify;
+        }
+
+        /* Grid 4 Kotak Beranda */
+        .info-grid-4 {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .grid-card {
+            background: white;
+            padding: 24px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.01);
+            border-top: 4px solid var(--merah-hati);
+            border-left: 1px solid var(--cream-kontras);
+            border-right: 1px solid var(--cream-kontras);
+            border-bottom: 1px solid var(--cream-kontras);
+            transition: transform 0.3s;
+        }
+
+        .grid-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .grid-card i {
+            font-size: 28px;
+            color: var(--merah-crimson);
+            margin-bottom: 12px;
+        }
+
+        .grid-card h4 {
+            font-size: 15px;
+            color: var(--text-dark);
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+
+        .grid-card p {
+            font-size: 13px;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
+        /* --- HALAMAN 3: PETA WEBGIS --- */
+        .webgis-layout {
+            display: grid;
+            grid-template-columns: 280px 1fr 320px;
+            gap: 20px;
+            height: 600px;
+        }
+
+        .gis-panel {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+            border: 1px solid var(--cream-kontras);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .panel-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--merah-gelap);
+            margin-bottom: 15px;
+            border-bottom: 1px solid var(--cream-kontras);
+            padding-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Desain Filter */
+        .filter-group {
+            margin-bottom: 18px;
+        }
+
+        .filter-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        .filter-select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #E2E8F0;
+            border-radius: 6px;
+            font-size: 13px;
+            outline: none;
+            background-color: var(--cream-muda);
+        }
+
+        .filter-pills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .pill-btn {
+            padding: 6px 12px;
+            border: 1px solid #E2E8F0;
+            background: white;
+            font-size: 12px;
+            font-weight: 500;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .pill-btn.active {
+            background: var(--merah-hati);
+            color: white;
+            border-color: var(--merah-hati);
+        }
+
+        /* Widget Peta */
+        #map-canvas {
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+            border: 1px solid var(--cream-kontras);
+            z-index: 1;
+        }
+
+        /* Sidebar Jarak Kanti */
+        .coordinate-widget {
+            background: var(--cream-muda);
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-family: monospace;
+            margin-bottom: 15px;
+            border: 1px dashed var(--merah-hati);
+            word-break: break-all;
+        }
+
+        .distance-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .distance-card {
+            background: var(--cream-muda);
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid var(--cream-kontras);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .distance-card:hover {
+            border-color: var(--merah-hati);
+            background: white;
+        }
+
+        .dist-rs-name {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 4px;
+        }
+
+        .dist-metrics {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: var(--merah-crimson);
+            font-weight: 600;
+        }
+
+        /* Pop Up Peta Desain Custom */
+        .popup-container {
+            max-width: 240px;
+        }
+
+        .popup-img {
+            width: 100%;
+            height: 110px;
+            object-fit: cover;
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+
+        .popup-meta {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .popup-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--merah-hati);
+            margin: 2px 0 6px 0;
+        }
+
+        .popup-info-line {
+            font-size: 12px;
+            margin-bottom: 3px;
+        }
+
+        .popup-btn-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            margin-top: 10px;
+        }
+
+        .popup-btn {
+            padding: 6px;
+            text-align: center;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .btn-telp { background: #E2E8F0; color: var(--text-dark); }
+        .btn-maps { background: var(--merah-hati); color: white; }
+
+        /* --- HALAMAN 4: ENSIKLOPEDIA INFORMASI --- */
+        .info-selector-bar {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 12px;
+            margin-bottom: 25px;
+            border-bottom: 1px solid var(--cream-kontras);
+        }
+
+        .selector-btn {
+            padding: 10px 16px;
+            background: white;
+            border: 1px solid var(--cream-kontras);
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.3s;
+        }
+
+        .selector-btn.active {
+            background: var(--merah-hati);
+            color: white;
+            border-color: var(--merah-hati);
+        }
+
+        .detail-rs-grid {
+            display: grid;
+            grid-template-columns: 1.2fr 1fr;
+            gap: 30px;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+            border: 1px solid var(--cream-kontras);
+        }
+
+        .detail-main-img {
+            width: 100%;
+            height: 350px;
+            object-fit: cover;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+
+        .detail-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--merah-gelap);
+            margin-bottom: 5px;
+        }
+
+        .detail-badge-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .badge-info {
+            padding: 4px 10px;
+            font-size: 11px;
+            font-weight: 600;
+            border-radius: 4px;
+            background-color: var(--cream-kontras);
+            color: var(--text-dark);
+        }
+
+        .badge-info.bpjs-ya {
+            background-color: #DCFCE7;
+            color: #15803D;
+        }
+
+        .detail-desc {
+            font-size: 14px;
+            line-height: 1.6;
+            text-align: justify;
+            color: var(--text-dark);
+        }
+
+        .stats-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .stats-table th {
+            background-color: var(--merah-gelap);
+            color: white;
+            padding: 10px 12px;
+            text-align: left;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .stats-table td {
+            padding: 10px 12px;
+            font-size: 13px;
+            border-bottom: 1px solid var(--cream-kontras);
+        }
+
+        .stats-table tr:nth-child(even) {
+            background-color: var(--cream-muda);
+        }
+
+        .section-sub-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin: 20px 0 10px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-left: 3px solid var(--merah-hati);
+            padding-left: 8px;
+        }
+
+        /* --- FOOTER INFORMASI LEBIH LANJUT --- */
+        footer {
+            background-color: var(--navy-dark);
+            color: #E2E8F0;
+            padding: 40px 24px 20px 24px;
+            margin-top: auto;
+            border-top: 5px solid var(--merah-hati);
+        }
+
+        .footer-top {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1.5fr 1fr 1fr;
+            gap: 40px;
+            padding-bottom: 30px;
+            border-bottom: 1px solid #334155;
+        }
+
+        .footer-logo-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            color: #ffffff;
+        }
+
+        .footer-desc {
+            font-size: 12px;
+            line-height: 1.6;
+            color: #94A3B8;
+            text-align: justify;
+            margin-bottom: 15px;
+        }
+
+        .footer-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .footer-links {
+            list-style: none;
+        }
+
+        .footer-links li {
+            margin-bottom: 10px;
+        }
+
+        .footer-links a {
+            color: #94A3B8;
+            text-decoration: none;
+            font-size: 13px;
+            transition: color 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .footer-links a:hover {
+            color: var(--merah-crimson);
+        }
+
+        .footer-contact {
+            font-size: 13px;
+            color: #94A3B8;
+            line-height: 1.5;
+        }
+
+        .footer-contact p {
+            margin-bottom: 10px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .footer-contact i {
+            color: var(--merah-crimson);
+            margin-top: 3px;
+        }
+
+        .footer-bottom {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding-top: 20px;
+            text-align: center;
+            font-size: 11px;
+            color: #64748B;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-left">
+            <div class="brand-logo"><i class="fa-solid fa-map-location-dot"></i></div>
+            <div class="brand-text">
+                <h1>MetroHealth GIS</h1>
+                <p>Dinas Kesehatan Kota Metro</p>
+            </div>
+        </div>
+
+        <nav>
+            <a href="#" class="nav-link" onclick="switchPage('profil', this)">Profil</a>
+            <a href="#" class="nav-link active" onclick="switchPage('beranda', this)">Beranda</a>
+            <a href="#" class="nav-link" onclick="switchPage('webgis', this)">Peta WebGIS</a>
+            <a href="#" class="nav-link" onclick="switchPage('informasi', this)">Informasi RS</a>
+        </nav>
+
+        <div class="header-search">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="global-search" placeholder="Cari Rumah Sakit..." onkeyup="handleGlobalSearch(event)">
+        </div>
+
+        <div class="jargon-banner">
+            <p class="jargon-text">"Bridging Spatial Literacy and Healthcare Accessibility."</p>
+        </div>
+    </header>
+
+    <main>
+
+        <div id="page-profil" class="page-content">
+            <div class="profile-container">
+                <h2 class="profile-title">Profil Peneliti</h2>
+                
+                <div class="tab-menu">
+                    <button class="tab-btn active" onclick="switchTab('biodata', this)">Biodata Utama</button>
+                    <button class="tab-btn" onclick="switchTab('pendidikan', this)">Riwayat Pendidikan</button>
+                    <button class="tab-btn" onclick="switchTab('riset', this)">Fokus Kajian & Kerangka Kerja Spasial</button>
+                </div>
+
+                <div id="tab-biodata" class="tab-content active">
+                    <img src="../Assets/fotodiri.jpeg" alt="Foto Jihan" class="profile-photo" onerror="this.src='Assets/fotodiri.jpeg'">
+                    <table class="biodata-table">
+                        <tr><td>Nama Lengkap</td><td>Jihan Dzakhiya Faadhila</td></tr>
+                        <tr><td>NPM</td><td>2313034063</td></tr>
+                        <tr><td>Program Studi</td><td>Pendidikan Geografi</td></tr>
+                        <tr><td>Facultas</td><td>FKIP</td></tr>
+                        <tr><td>Perguruan Tinggi</td><td>Universitas Lampung</td></tr>
+                    </table>
+                </div>
+
+                <div id="tab-pendidikan" class="tab-content">
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <p class="time-year">2023 - Sekarang</p>
+                            <p class="time-text">Universitas Lampung</p>
+                        </div>
+                        <div class="timeline-item">
+                            <p class="time-year">2020 - 2023</p>
+                            <p class="time-text">SMA Negeri 3 Metro</p>
+                        </div>
+                        <div class="timeline-item">
+                            <p class="time-year">2017 - 2020</p>
+                            <p class="time-text">SMP Negeri 3 Metro</p>
+                        </div>
+                        <div class="timeline-item">
+                            <p class="time-year">2011 - 2017</p>
+                            <p class="time-text">SD Negeri 4 Metro Utara</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-riset" class="tab-content">
+                    <div style="line-height: 1.6; font-size: 15px;">
+                        <p style="margin-bottom: 15px; text-align: justify;"><strong>Alasan Pemilihan Wilayah Kajian:</strong> Kota Metro dipilih sebagai lokus pengembangan basis data spasial faskes makro karena posisinya sebagai kota otonom rujukan medis pusat pelayanan wilayah regional Lampung Tengah dan Timur. Analisis spasial kedekatan jarak esensial untuk mengevaluasi efisiensi aksesibilitas keruangan penanganan darurat medik.</p>
+                        <p><strong>Kompetensi Teknis Kartografi & Analisis Geografis:</strong></p>
+                        <ul style="margin-left: 20px; margin-top: 10px;">
+                            <li>QGIS Spatial Analysis (Vector Analysis, Buffering, Heatmap)</li>
+                            <li>WebGIS Development (HTML5, CSS Grid/Flexbox, Javascript DOM, Leaflet API)</li>
+                            <li>Global Positioning System (GPS) Surveying & Field Data Processing</li>
+                            <li>Spatial Statistics & Demographic Geographics</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="page-beranda" class="page-content active">
+            <div class="hero-section">
+                <div class="hero-bg"></div>
+                <div class="hero-content">
+                    <img src="Assets/logokotametro.png" alt="Logo Kota Metro" class="hero-logo">
+                    <div class="typewriter-container">
+                        <span id="typewriter" class="typewriter-text"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="main-intro">
+                <img src="../Assets/KOTAMETRO2.jpg" alt="Kota Metro" class="intro-img" onerror="this.src='Assets/Kota_Metro.jpg'">
+                <div class="intro-text">
+                    <h2>Sistem Informasi Spasial Layanan Kesehatan</h2>
+                    <p>Kota Metro sebagai salah satu pusat pertumbuhan perkotaan utama di Provinsi Lampung menuntut ketersediaan infrastruktur pelayanan publik yang tangguh, terukur, dan mudah diakses. Portal WebGIS ini dirancang secara khusus untuk memetakan distribusi 9 Rumah Sakit Utama di seluruh wilayah administratif Kota Metro. Melalui integrasi spasial, data sebaran fasilitas rujukan medis tidak hanya tersaji secara tekstual, melainkan divisualisasikan dalam kerangka spasial guna mendukung analisis pemetaan kesehatan masyarakat, evaluasi kesenjangan layanan keruangan, hingga optimalisasi akses darurat pertolongan medis rujukan utama.</p>
+                </div>
+            </div>
+
+            <div class="info-grid-4">
+                <div class="grid-card">
+                    <i class="fa-solid fa-earth-asia"></i>
+                    <h4>Cakupan Geografis</h4>
+                    <p>Luas Wilayah Kota Metro ± 68,74 Km² terdistribusi ke dalam 5 kecamatan administrasi.</p>
+                </div>
+                <div class="grid-card">
+                    <i class="fa-solid fa-hospital"></i>
+                    <h4>Objek Pemetaan</h4>
+                    <p>Integrasi database spasial presisi pada 9 Rumah Sakit Utama (Pemerintah, Swasta & RSIA).</p>
+                </div>
+                <div class="grid-card">
+                    <i class="fa-solid fa-route"></i>
+                    <h4>Metode Analisis</h4>
+                    <p>Penghitungan matriks jarak lurus waktu nyata menggunakan algoritma Haversine Formula via Sensor GPS.</p>
+                </div>
+                <div class="grid-card">
+                    <i class="fa-solid fa-database"></i>
+                    <h4>Basis Data Sah</h4>
+                    <p>Atribut bersumber resmi dari Registrasi Faskes Dinas Kesehatan Kota Metro & Kemenkes RI.</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="page-webgis" class="page-content">
+            <div class="webgis-layout">
+                <div class="gis-panel">
+                    <h3 class="panel-title">Saring Data Spasial</h3>
+                    
+                    <div class="filter-group">
+                        <label class="filter-label">Wilayah Kecamatan</label>
+                        <select id="filter-kecamatan" class="filter-select" onchange="applyFilters()">
+                            <option value="all">Semua Kecamatan</option>
+                            <option value="Metro Pusat">Metro Pusat</option>
+                            <option value="Metro Timur">Metro Timur</option>
+                            <option value="Metro Barat">Metro Barat</option>
+                            <option value="Metro Selatan">Metro Selatan</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label class="filter-label">Status Manajemen</label>
+                        <div class="filter-pills" id="filter-jenis">
+                            <button class="pill-btn active" onclick="setPillFilter('jenis', 'all', this)">Semua</button>
+                            <button class="pill-btn" onclick="setPillFilter('jenis', 'RSUD', this)">RSUD</button>
+                            <button class="pill-btn" onclick="setPillFilter('jenis', 'RS', this)">RS Swasta</button>
+                            <button class="pill-btn" onclick="setPillFilter('jenis', 'RSIA', this)">RSIA</button>
+                        </div>
+                    </div>
+
+                    <div class="filter-group">
+                        <label class="filter-label">Kemitraan Jaminan BPJS</label>
+                        <div class="filter-pills" id="filter-bpjs">
+                            <button class="pill-btn active" onclick="setPillFilter('bpjs', 'all', this)">Semua</button>
+                            <button class="pill-btn" onclick="setPillFilter('bpjs', 'Melayani', this)">Ya</button>
+                            <button class="pill-btn" onclick="setPillFilter('bpjs', 'Tidak Melayani', this)">Tidak</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="map-canvas"></div>
+
+                <div class="gis-panel">
+                    <h3 class="panel-title">Aksesibilitas Jarak GPS</h3>
+                    <div class="coordinate-widget" id="user-coord">
+                        Melacak lokasi koordinat perangkat kamu...
+                    </div>
+                    <div class="distance-list" id="distance-cards-container">
+                        </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="page-informasi" class="page-content">
+            <div class="info-selector-bar" id="info-rs-selectors">
+                </div>
+            
+            <div id="rs-detail-display">
+                </div>
+        </div>
+
+    </main>
+
+    <footer>
+        <div class="footer-top">
+            <div>
+                <div class="footer-logo-row">
+                    <i class="fa-solid fa-map-location-dot" style="font-size: 20px; color: var(--merah-crimson);"></i>
+                    <h3 style="font-size: 16px; font-weight: 700;">METROHEALTH GIS</h3>
+                </div>
+                <p class="footer-desc">
+                    Sistem Informasi Geografis (WebGIS) ini mengintegrasikan pemetaan spasial interaktif dan analisis jangkauan kedekatan (Proximity Analysis) untuk menyajikan visualisasi sebaran fasilitas kesehatan makro di Kota Metro, guna mendukung edukasi geografis dan keterbukaan informasi pelayanan publik.
+                </p>
+            </div>
+            <div>
+                <h4 class="footer-title">Tautan Eksternal Resmi</h4>
+                <ul class="footer-links">
+                    <li><a href="https://dinkes.metrokota.go.id" target="_blank"><i class="fa-solid fa-circle-nodes"></i> Dinas Kesehatan Kota Metro</a></li>
+                    <li><a href="https://kemkes.go.id" target="_blank"><i class="fa-solid fa-circle-nodes"></i> Kementerian Kesehatan RI</a></li>
+                    <li><a href="https://metrokota.go.id" target="_blank"><i class="fa-solid fa-circle-nodes"></i> Web Resmi Kota Metro</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="footer-title">Sekretariat Hubungi Kami</h4>
+                <div class="footer-contact">
+                    <p><i class="fa-solid fa-location-dot"></i> Jl. Ki Hajar Dewantara No.1, Iringmulyo, Metro Timur, Kota Metro, Lampung 34112</p>
+                    <p><i class="fa-solid fa-envelope"></i> dinkes@metrokota.go.id</p>
+                    <p><i class="fa-solid fa-phone"></i> (0725) 41532</p>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <i class="fa-regular fa-copyright"></i> 2026 metrohealth-gis • Jihan Dzakhiya Faadhila • Universitas Lampung. All rights reserved.
+        </div>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+    <script>
+        // --- DATA UTAMA MASTER 9 RUMAH SAKIT KOTA METRO (MENGGUNAKAN DOUBLE-PATH FALLBACK BILA ERROR) ---
+        const rumahSakitData = [
+            {
+                kode: "1872016", nama: "RSUD Jend. Ahmad Yani", jenis: "RSUD", tipe: "B", kecamatan: "Metro Pusat",
+                lat: -5.115702, lng: 105.310097, alamat: "Jalan Jend. A. Yani No.13, Imopuro, Kec. Metro Pusat, Kota Metro, Lampung 34124",
+                bpjs: "Melayani", bed: "240 Bed", img: "../Assets/RS_JendAhmadYani.jpg", altImg: "Assets/RS_JendAhmadYani.jpg",
+                desc: "RSUD Jend. Ahmad Yani merupakan rumah sakit rujukan utama tipe B terbesar di Kota Metro. Berfungsi sebagai pusat rujukan medis lintas kabupaten sekitar, dilengkapi fasilitas perawatan ICU komprehensif, instalasi bedah terpadu, dan poliklinik sub-spesialis yang sangat lengkap.",
+                sdm: { dokterSp: 34, dokterUmum: 18, perawat: 142, bidan: 20 },
+                kamar: { vip: 20, kelas1: 40, kelas2: 60, kelas3: 100, isolasi: 20 },
+                layanan: ["IGD 24 Jam", "Poli Bedah Tumor", "Hemodialisa (Cuci Darah)", "CT Scan 64 Slices", "Poli Jantung & Pembuluh Darah"]
+            },
+            {
+                kode: "1872031", nama: "RS Islam Metro", jenis: "RS", tipe: "D", kecamatan: "Metro Timur",
+                lat: -5.105789, lng: 105.333197, alamat: "Jalan Jend. AH. Nasution No.250, Yosodadi, Kec. Metro Timur, Kota Metro, Lampung 34111",
+                bpjs: "Melayani", bed: "55 Bed", img: "../Assets/RS_Islam.jpg", altImg: "Assets/RS_Islam.jpg",
+                desc: "RS Islam Metro menyajikan pelayanan prima bernuansa Islami berlokasi strategis di pintu masuk utama koridor Metro Timur. Menyediakan fasilitas rawat inap memadai dan poliklinik umum serta spesialis anak maupun kandungan dengan aksesibilitas tinggi bagi pemegang kartu jaminan.",
+                sdm: { dokterSp: 8, dokterUmum: 6, perawat: 38, bidan: 12 },
+                kamar: { vip: 4, kelas1: 10, kelas2: 15, kelas3: 22, isolasi: 4 },
+                layanan: ["IGD Trauma Scape", "Poli Kebidanan & Kandungan", "Poli Kesehatan Anak", "Fisioterapi Medis", "Laboratorium Klinik"]
+            },
+            {
+                kode: "1871020", nama: "RS Mardi Waluyo", jenis: "RS", tipe: "C", kecamatan: "Metro Pusat",
+                lat: -5.118311, lng: 105.296408, alamat: "Jalan Jendral Sudirman No.156, Metro, Kec. Metro Pusat, Kota Metro, Lampung 34125",
+                bpjs: "Melayani", bed: "124 Bed", img: "../Assets/RS_MardiWaluyo.jpg", altImg: "Assets/RS_MardiWaluyo.jpg",
+                desc: "RS Mardi Waluyo adalah salah satu faskes swasta tertua penuh historis pengabdian panjang di Metro Pusat. Menyediakan layanan klasifikasi kelas C dengan keunggulan penanganan poliklinik saraf, rehabilitasi medis, serta kemitraan BPJS Kesehatan yang terjalin erat.",
+                sdm: { dokterSp: 16, dokterUmum: 10, perawat: 82, bidan: 14 },
+                kamar: { vip: 12, kelas1: 24, kelas2: 30, kelas3: 50, isolasi: 8 },
+                layanan: ["Instalasi Gawat Darurat", "Poli Saraf & Stroke Center", "Poli Orthopedi (Bedah Tulang)", "Rehabilitasi Medik Terpadu", "Apotek 24 Jam"]
+            },
+            {
+                kode: "1872042", nama: "RS Muhammadiyah Metro", jenis: "RS", tipe: "C", kecamatan: "Metro Barat",
+                lat: -5.135017, lng: 105.289763, alamat: "Jalan SoekarnoH atta No.42, Mulyojati, Kec. Metro Barat, Kota Metro, Lampung 34125",
+                bpjs: "Melayani", bed: "152 Bed", img: "../Assets/RS_Muhammadiyah.jpeg", altImg: "Assets/RS_Muhammadiyah.jpeg",
+                desc: "RS Muhammadiyah Metro merupakan pilar utama faskes di Metro Barat dengan kapasitas tampung rawat inap yang sangat masif. Terkenal unggul dalam pelayanan operasi katarak terpadu, pusat khitan modern, serta manajemen ruang kelas III berstandar KRIS yang nyaman.",
+                sdm: { dokterSp: 22, dokterUmum: 12, perawat: 98, bidan: 16 },
+                kamar: { vip: 15, kelas1: 30, kelas2: 40, kelas3: 60, isolasi: 7 },
+                layanan: ["IGD Resusitasi", "Poli Mata & Katarak Center", "Poli Bedah Umum", "USG 4 Dimensi", "Poli Penyakit Dalam"]
+            },
+            {
+                kode: "1872053", nama: "RSIA AMC Metro", jenis: "RSIA", tipe: "C", kecamatan: "Metro Pusat",
+                lat: -5.118572, lng: 105.309889, alamat: "Jalan Kunang No.15, Metro, Kec. Metro Pusat, Kota Metro, Lampung 34111",
+                bpjs: "Melayani", bed: "45 Bed", img: "../Assets/RS_AMC.png", altImg: "Assets/RS_AMC.png",
+                desc: "RSIA AMC Metro fokus melayani penanganan spesifik Ibu dan Anak di pusat keramaian Metro. Menyediakan penanganan persalinan berisiko tinggi (*high risk*), klinik fertilitas terpadu, penanganan intensif neonatus NICU/PICU, serta ditunjang lingkungan perawatan yang ramah psikologis anak.",
+                sdm: { dokterSp: 6, dokterUmum: 5, perawat: 24, bidan: 18 },
+                kamar: { vip: 8, kelas1: 10, kelas2: 12, kelas3: 12, isolasi: 3 },
+                layanan: ["Poliklinik Kebidanan", "Klinik Tumbuh Kembang Anak", "Ruang Perawatan Intensif NICU", "Persalinan Tanpa Rasa Sakit (ILA)", "Imunisasi Lengkap"]
+            },
+            {
+                kode: "1872065", nama: "RSIA Asih Metro", jenis: "RSIA", tipe: "C", kecamatan: "Metro Timur",
+                lat: -5.118367, lng: 105.313722, alamat: "Jalan Ahmad Yani No.52, Yosorejo, Kec. Metro Timur, Kota Metro, Lampung 34124",
+                bpjs: "Melayani", bed: "30 Bed", img: "../Assets/RSIA_Asih.jpg", altImg: "Assets/RSIA_Asih.jpg",
+                desc: "RSIA Asih Metro merupakan sarana pelayanan kesehatan ibu anak terpercaya di Yosorejo. Memberikan sentuhan pelayanan persalinan personal yang aman, konsultasi laktasi eksklusif, serta penanganan tumbuh kembang bayi prematur dengan sarana inkubator modern.",
+                sdm: { dokterSp: 4, dokterUmum: 4, perawat: 18, bidan: 15 },
+                kamar: { vip: 5, kelas1: 6, kelas2: 8, kelas3: 9, isolasi: 2 },
+                layanan: ["Emergency Obstetri Neonatal", "Poli Kandungan", "Konseling Laktasi & Menyusui", "Senam Hamil & Yoga Prenatal", "Poli Anak Terpadu"]
+            },
+            {
+                kode: "1872064", nama: "RSIA Permata Hati", jenis: "RSIA", tipe: "C", kecamatan: "Metro Timur",
+                lat: -5.114238, lng: 105.313650, alamat: "Jalan Jend. AH. Nasution No.34, Yosorejo, Kec. Metro Timur, Kota Metro, Lampung 34124",
+                bpjs: "Melayani", bed: "38 Bed", img: "../Assets/RS_PermataHati.jpeg", altImg: "Assets/RS_PermataHati.jpeg",
+                desc: "RSIA Permata Hati menyuguhkan kenyamanan ekstra dalam perawatan klinis medis ibu, bayi, dan anak. Memiliki keunggulan dokter spesialis anak stanby, ruang operasi steril modern untuk tindakan SC, serta poliklinik KB mandiri terintegrasi jaminan BPJS Kesehatan.",
+                sdm: { dokterSp: 5, dokterUmum: 4, perawat: 20, bidan: 14 },
+                kamar: { vip: 6, kelas1: 8, kelas2: 10, kelas3: 12, isolasi: 2 },
+                layanan: ["Poli Kandungan & Onkologi", "Bedah Sesar Kamar Operasi", "Poli Spesialis Anak", "Pemeriksaan USG Fetomaternal", "Baby Spa & Massage"]
+            },
+            {
+                kode: "1872066", nama: "RS Azizah Metro", jenis: "RS", tipe: "C", kecamatan: "Metro Pusat",
+                lat: -5.109686, lng: 105.309628, alamat: "Jalan KH. Hanafiah No.64, Imopuro, Kec. Metro Pusat, Kota Metro, Lampung 34124",
+                bpjs: "Tidak Melayani", bed: "60 Bed", img: "../Assets/RS_Azizah.jpg", altImg: "Assets/RS_Azizah.jpg",
+                desc: "RS Azizah Metro melayani pasien dengan sistem manajemen eksklusif terintegrasi di Metro Pusat. Fokus utama rumah sakit ini mengarah pada kecepatan pelayanan non-antre, fasilitas laboratorium diagnostik mutakhir mandiri, serta poliklinik spesialis penyakit dalam dan bedah umum.",
+                sdm: { dokterSp: 10, dokterUmum: 6, perawat: 40, bidan: 8 },
+                kamar: { vip: 10, kelas1: 15, kelas2: 15, kelas3: 16, isolasi: 4 },
+                layanan: ["IGD Non-Stop 24 Jam", "Poli Penyakit Dalam", "Poli Bedah Digestif", "Medical Check Up Eksklusif", "Laboratorium Otomatis"]
+            },
+            {
+                kode: "1872067", nama: "RSUD Sumbersari Bantul", jenis: "RS", tipe: "D", kecamatan: "Metro Selatan",
+                lat: -5.162030, lng: 105.295039, alamat: "Jalan Letjend Soeprapto No.4, Sumbersari, Kec. Metro Selatan, Kota Metro, Lampung 34124",
+                bpjs: "Tidak Melayani", bed: "40 Bed", img: "../Assets/RS_Sumbersari_Bantul.jpg", altImg: "Assets/RS_Sumbersari_Bantul.jpg",
+                desc: "RSUD Sumbersari Bantul adalah unit pelaksana teknis daerah sekunder pertahanan faskes di Metro Selatan. Menyediakan akses jangkauan rawat jalan serta inap utama bagi masyarakat suburban sekitar, memangkas jarak akses mobilitas menuju pusat perkotaan.",
+                sdm: { dokterSp: 6, dokterUmum: 6, perawat: 30, bidan: 10 },
+                kamar: { vip: 2, kelas1: 8, kelas2: 10, kelas3: 18, isolasi: 2 },
+                layanan: ["Instalasi Gawat Darurat", "Poli Umum & Lansia", "Poli Kesehatan Ibu Anak", "Poli Gigi & Mulut", "Pusat Penyuluhan Gizi"]
+            }
+        ];
+
+        // --- 1. LOGIKA SISTEM SWITCH HALAMAN (SPA NAVIGATION) ---
+        function switchPage(pageId, element) {
+            document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+            
+            document.getElementById('page-' + pageId).classList.add('active');
+            if(element) element.classList.add('active');
+            
+            if(pageId === 'webgis') {
+                setTimeout(() => { map.invalidateSize(); }, 200);
+            }
+        }
+
+        // --- 2. LOGIKA TAB INTERAKTIF DI HALAMAN PROFIL ---
+        function switchTab(tabId, button) {
+            const container = button.closest('.profile-container');
+            container.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            container.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            
+            document.getElementById('tab-' + tabId).classList.add('active');
+    button.classList.add('active');
+        }
+
+        // --- 3. ANIMASI TEKS MENGETIK (TYPEWRITER EFFECT) BERANDA ---
+        const textSequence = [
+            "Selamat Datang di Portal MetroHealth GIS",
+            "Sistem Informasi Geografis Sebaran Rumah Sakit Kota Metro"
+        ];
+        let sequenceIndex = 0;
+        let charIndex = 0;
+        let isDeleting = false;
+        const typewriterElement = document.getElementById('typewriter');
+
+        function doTypewriter() {
+            const currentFullText = textSequence[sequenceIndex];
+            if (isDeleting) {
+                typewriterElement.textContent = currentFullText.substring(0, charIndex - 1);
+                charIndex--;
+            } else {
+                typewriterElement.textContent = currentFullText.substring(0, charIndex + 1);
+                charIndex++;
+            }
+
+            let typeSpeed = isDeleting ? 30 : 70;
+
+            if (!isDeleting && charIndex === currentFullText.length) {
+                typeSpeed = 2500; 
+                isDeleting = true;
+            } else if (isDeleting && charIndex === 0) {
+                isDeleting = false;
+                sequenceIndex = (sequenceIndex + 1) % textSequence.length;
+                typeSpeed = 500;
+            }
+
+            setTimeout(doTypewriter, typeSpeed);
+        }
+        document.addEventListener("DOMContentLoaded", () => { doTypewriter(); });
+
+        // --- 4. ENGINE INVENTORI PETA LEAFLET (HALAMAN 3) ---
+        const map = L.map('map-canvas').setView([-5.1132, 105.3075], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        let activeMarkers = [];
+        let currentPillFilters = { jenis: 'all', bpjs: 'all' };
+        let userLocation = null;
+
+        function drawMarkers(dataList) {
+            activeMarkers.forEach(m => map.removeLayer(m));
+            activeMarkers = [];
+
+            dataList.forEach(rs => {
+                const marker = L.marker([rs.lat, rs.lng]).addTo(map);
+                
+                const popupContent = `
+                    <div class="popup-container">
+                        <img src="${rs.img}" class="popup-img" shortcuts="" onerror="this.src='${rs.altImg}'">
+                        <div class="popup-meta">${rs.jenis} • Kelas Tipe ${rs.tipe}</div>
+                        <h4 class="popup-title">${rs.nama}</h4>
+                        <div class="popup-info-line"><strong>Kode RS:</strong> ${rs.kode}</div>
+                        <div class="popup-info-line"><strong>Kecamatan:</strong> ${rs.kecamatan}</div>
+                        <div class="popup-info-line"><strong>Kapasitas:</strong> ${rs.bed}</div>
+                        <div class="popup-info-line"><strong>BPJS:</strong> ${rs.bpjs}</div>
+                        <div class="popup-btn-container">
+                            <a href="tel:${rs.kode}" class="popup-btn btn-telp"><i class="fa-solid fa-phone"></i> Telepon</a>
+                            <a href="https://www.google.com/maps/dir/?api=1&destination=${rs.lat},${rs.lng}" target="_blank" class="popup-btn btn-maps"><i class="fa-solid fa-diamond-turn-right"></i> Rute</a>
+                        </div>
+                    </div>
+                `;
+                
+                marker.bindPopup(popupContent);
+                marker.rsData = rs; 
+                activeMarkers.push(marker);
+            });
+        }
+
+        function setPillFilter(type, value, element) {
+            const container = element.parentElement;
+            container.querySelectorAll('.pill-btn').forEach(b => b.classList.remove('active'));
+            element.classList.add('active');
+            
+            currentPillFilters[type] = value;
+            applyFilters();
+        }
+
+        function applyFilters() {
+            const selectKec = document.getElementById('filter-kecamatan').value;
+            
+            const filteredData = rumahSakitData.filter(rs => {
+                const matchKec = (selectKec === 'all' || rs.kecamatan === selectKec);
+                const matchJenis = (currentPillFilters.jenis === 'all' || rs.jenis === currentPillFilters.jenis);
+                const matchBpjs = (currentPillFilters.bpjs === 'all' || rs.bpjs === currentPillFilters.bpjs);
+                return matchKec && matchJenis && matchBpjs;
+            });
+
+            drawMarkers(filteredData);
+            calculateDistances(); 
+        }
+
+        // --- 5. ALGORITMA HAVERSINE FORMULA ---
+        function haversineDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371; 
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+
+        function trackUserLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.watchPosition(position => {
+                    userLocation = {
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude
+                    };
+                    document.getElementById('user-coord').innerHTML = `
+                        <i class="fa-solid fa-location-crosshairs" style="color:var(--merah-crimson)"></i> 
+                        <strong>Koordinat Kamu:</strong> ${userLocation.lat.toFixed(6)}, ${userLocation.lng.toFixed(6)}
+                    `;
+                    if(window.userCircle) { map.removeLayer(window.userCircle); }
+                    window.userCircle = L.circle([userLocation.lat, userLocation.lng], {
+                        radius: 30, color: '#D32F2F', fillColor: '#D32F2F', fillOpacity: 0.4
+                    }).addTo(map).bindPopup("Lokasi Kamu Saat Ini");
+
+                    calculateDistances();
+                }, error => {
+                    document.getElementById('user-coord').textContent = "Akses GPS dinonaktifkan. Menggunakan posisi pusat simulasi Kota Metro.";
+                    simulateDefaultLocation();
+                });
+            } else {
+                simulateDefaultLocation();
+            }
+        }
+
+        function simulateDefaultLocation() {
+            userLocation = { lat: -5.1132, lng: 105.3075 };
+            document.getElementById('user-coord').innerHTML = `
+                <i class="fa-solid fa-triangle-exclamation"></i> 
+                <strong>Simulasi Lokasi:</strong> ${userLocation.lat.toFixed(6)}, ${userLocation.lng.toFixed(6)}
+            `;
+            calculateDistances();
+        }
+
+        function calculateDistances() {
+            if (!userLocation) return;
+            
+            const selectKec = document.getElementById('filter-kecamatan').value;
+            const validData = rumahSakitData.filter(rs => {
+                const matchKec = (selectKec === 'all' || rs.kecamatan === selectKec);
+                const matchJenis = (currentPillFilters.jenis === 'all' || rs.jenis === currentPillFilters.jenis);
+                const matchBpjs = (currentPillFilters.bpjs === 'all' || rs.bpjs === currentPillFilters.bpjs);
+                return matchKec && matchJenis && matchBpjs;
+            });
+
+            const distances = validData.map(rs => {
+                const dist = haversineDistance(userLocation.lat, userLocation.lng, rs.lat, rs.lng);
+                const timeEst = Math.round(dist * 3); 
+                return { ...rs, distance: dist, timeEst: timeEst };
+            });
+
+            distances.sort((a, b) => a.distance - b.distance);
+
+            const container = document.getElementById('distance-cards-container');
+            container.innerHTML = '';
+
+            if(distances.length === 0) {
+                container.innerHTML = '<div style="font-size:12px;color:var(--text-muted);text-align:center;padding:20px;">Tidak ada faskes rujukan yang cocok.</div>';
+                return;
+            }
+
+            distances.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'distance-card';
+                card.onclick = () => {
+                    const marker = activeMarkers.find(m => m.rsData.kode === item.kode);
+                    if(marker) {
+                        map.setView([item.lat, item.lng], 15);
+                        marker.openPopup();
+                    }
+                };
+                card.innerHTML = `
+                    <div class="dist-rs-name">${item.nama}</div>
+                    <div class="dist-metrics">
+                        <span><i class="fa-solid fa-road"></i> ${item.distance.toFixed(2)} Km</span>
+                        <span><i class="fa-solid fa-car"></i> ± ${item.timeEst === 0 ? 1 : item.timeEst} Menit</span>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // --- 6. ENGINE PROFILE ENSIKLOPEDIA DETIL RUMAH SAKIT ---
+        function initInfoPage() {
+            const selectorContainer = document.getElementById('info-rs-selectors');
+            selectorContainer.innerHTML = '';
+            
+            rumahSakitData.forEach((rs, index) => {
+                const btn = document.createElement('button');
+                btn.className = `selector-btn ${index === 0 ? 'active' : ''}`;
+                btn.textContent = rs.nama;
+                btn.onclick = () => {
+                    document.querySelectorAll('.selector-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    renderRSDetail(rs);
+                };
+                selectorContainer.appendChild(btn);
+            });
+
+            renderRSDetail(rumahSakitData[0]);
+        }
+
+        function renderRSDetail(rs) {
+            const display = document.getElementById('rs-detail-display');
+            display.innerHTML = `
+                <div class="detail-rs-grid">
+                    <div>
+                        <img src="${rs.img}" class="detail-main-img" onerror="this.src='${rs.altImg}'">
+                        <h3 class="section-sub-title"><i class="fa-solid fa-circle-info"></i> Deskripsi Profil Lengkap</h3>
+                        <p class="detail-desc">${rs.desc}</p>
+                    </div>
+                    <div>
+                        <h2 class="detail-title">${rs.nama}</h2>
+                        <div class="detail-badge-row">
+                            <span class="badge-info">Tipe Kelas ${rs.tipe}</span>
+                            <span class="badge-info">Kode: ${rs.kode}</span>
+                            <span class="badge-info ${rs.bpjs === 'Melayani' ? 'bpjs-ya' : ''}">${rs.bpjs} BPJS</span>
+                        </div>
+                        <p style="font-size:13px; color:var(--text-muted); margin-bottom:15px;">
+                            <i class="fa-solid fa-map-pin" style="color:var(--merah-crimson)"></i> ${rs.alamat}
+                        </p>
+
+                        <h3 class="section-sub-title"><i class="fa-solid fa-users-gear"></i> Sumber Daya Manusia Kesehatan</h3>
+                        <table class="stats-table" style="margin-bottom:15px;">
+                            <thead>
+                                <tr><th>Ketenagaan Medis</th><th>Jumlah Kuantitas Personel</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td>Dokter Spesialis</td><td><strong>${rs.sdm.dokterSp} Personel</strong></td></tr>
+                                <tr><td>Dokter Umum</td><td><strong>${rs.sdm.dokterUmum} Personel</strong></td></tr>
+                                <tr><td>Tenaga Perawat</td><td><strong>${rs.sdm.perawat} Personel</strong></td></tr>
+                                <tr><td>Tenaga Kebidanan</td><td><strong>${rs.sdm.bidan} Personel</strong></td></tr>
+                            </tbody>
+                        </table>
+
+                        <h3 class="section-sub-title"><i class="fa-solid fa-bed"></i> Kapasitas Ketersediaan Tempat Tidur</h3>
+                        <table class="stats-table" style="margin-bottom:15px;">
+                            <thead>
+                                <tr><th>Kategori Kelas Rawat Inap</th><th>Kapasitas Kamar (Bed)</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td>Kamar Utama VIP</td><td>${rs.kamar.vip} Bed</td></tr>
+                                <tr><td>Ruang Perawatan Kelas I</td><td>${rs.kamar.kelas1} Bed</td></tr>
+                                <tr><td>Ruang Perawatan Kelas II</td><td>${rs.kamar.kelas2} Bed</td></tr>
+                                <tr><td>Ruang Perawatan Kelas III (KRIS)</td><td>${rs.kamar.kelas3} Bed</td></tr>
+                                <tr><td>Ruang Isolasi Intensif</td><td>${rs.kamar.isolasi} Bed</td></tr>
+                            </tbody>
+                        </table>
+
+                        <h3 class="section-sub-title"><i class="fa-solid fa-star"></i> Poliklinik & Layanan Unggulan</h3>
+                        <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:5px;">
+                            ${rs.layanan.map(l => `<span class="badge-info" style="background-color:rgba(128,0,0,0.06); color:var(--merah-gelap); font-weight:500;">${l}</span>`).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // --- 7. GLOBAL SEARCH FIELD ENGINE ---
+        function handleGlobalSearch(event) {
+            const query = event.target.value.toLowerCase().trim();
+            if(!query) return;
+
+            if(event.key === 'Enter') {
+                const findRS = rumahSakitData.find(rs => rs.nama.toLowerCase().includes(query));
+                if(findRS) {
+                    switchPage('informasi', document.querySelectorAll('.nav-link')[3]);
+                    const targetBtn = Array.from(document.querySelectorAll('.selector-btn')).find(b => b.textContent === findRS.nama);
+                    if(targetBtn) {
+                        document.querySelectorAll('.selector-btn').forEach(b => b.classList.remove('active'));
+                        targetBtn.classList.add('active');
+                        renderRSDetail(findRS);
+                    }
+                    event.target.value = ''; 
+                } else {
+                    alert('Rumah sakit tidak ditemukan. Coba gunakan padanan kata lain.');
+                }
+            }
+        }
+
+        // --- RUN RUNNER ---
+        drawMarkers(rumahSakitData);
+        trackUserLocation();
+        initInfoPage();
+    // ===== BATAS ADMINISTRASI 5 KECAMATAN KOTA METRO (DATA RESMI) =====
+const batasMetroGeoJSON = {"type":"FeatureCollection","features":[{"type":"Feature","properties":{"KECAMATAN":"METRO BARAT"},"geometry":{"type":"Polygon","coordinates":[[[105.294096,-5.108986],[105.295247,-5.109749],[105.296215,-5.111768],[105.296029,-5.113437],[105.29589,-5.114765],[105.295753,-5.115386],[105.295862,-5.116093],[105.296242,-5.116348],[105.297376,-5.116861],[105.297865,-5.117101],[105.298271,-5.11766],[105.298544,-5.117915],[105.298648,-5.118377],[105.29825,-5.119222],[105.298328,-5.120338],[105.29852,-5.1214],[105.298557,-5.122472],[105.298414,-5.123675],[105.298532,-5.124522],[105.298538,-5.125],[105.298993,-5.126182],[105.298597,-5.126846],[105.29851,-5.128035],[105.299378,-5.128863],[105.299707,-5.129331],[105.300202,-5.129941],[105.300654,-5.129651],[105.301026,-5.129509],[105.30206,-5.128999],[105.303069,-5.129356],[105.303866,-5.13028],[105.304537,-5.130937],[105.305147,-5.131064],[105.306064,-5.131093],[105.307229,-5.131029],[105.308555,-5.130934],[105.309556,-5.130922],[105.309976,-5.130886],[105.310683,-5.130181],[105.311279,-5.130122],[105.311813,-5.130848],[105.313028,-5.130836],[105.312951,-5.131721],[105.313226,-5.132139],[105.313137,-5.132929],[105.313037,-5.133416],[105.313233,-5.134049],[105.313295,-5.13469],[105.313086,-5.135492],[105.312686,-5.135821],[105.312474,-5.136133],[105.312594,-5.136696],[105.312193,-5.136979],[105.312425,-5.137251],[105.310507,-5.13697],[105.308974,-5.136192],[105.307763,-5.136451],[105.305703,-5.137771],[105.304895,-5.13815],[105.304489,-5.138153],[105.304226,-5.137439],[105.302257,-5.137846],[105.301523,-5.137543],[105.299623,-5.138381],[105.298568,-5.138762],[105.297053,-5.138171],[105.296361,-5.139232],[105.295778,-5.140547],[105.295182,-5.141862],[105.294549,-5.143231],[105.293968,-5.144453],[105.292947,-5.146108],[105.291839,-5.147568],[105.290586,-5.148832],[105.289049,-5.147793],[105.287915,-5.147068],[105.28742,-5.147912],[105.286886,-5.14989],[105.285228,-5.150495],[105.282839,-5.151982],[105.281982,-5.154418],[105.280998,-5.156139],[105.279911,-5.1568],[105.279537,-5.157983],[105.278186,-5.158606],[105.276101,-5.158765],[105.274532,-5.158751],[105.272967,-5.158417],[105.270921,-5.157642],[105.269351,-5.157947],[105.267216,-5.158914],[105.26541,-5.160082],[105.264179,-5.161204],[105.263068,-5.162155],[105.262657,-5.160785],[105.262486,-5.157929],[105.263713,-5.156123],[105.266133,-5.154168],[105.26813,-5.152673],[105.268055,-5.152049],[105.26827,-5.151636],[105.268541,-5.151675],[105.268596,-5.151029],[105.268781,-5.150029],[105.26954,-5.149237],[105.270299,-5.148538],[105.270644,-5.147869],[105.271292,-5.147078],[105.271908,-5.147008],[105.272747,-5.146579],[105.273868,-5.147268],[105.274696,-5.147268],[105.275174,-5.147001],[105.27552,-5.14659],[105.275767,-5.145808],[105.276163,-5.145066],[105.276487,-5.143974],[105.276161,-5.143754],[105.276059,-5.143511],[105.275378,-5.14307],[105.274526,-5.143185],[105.273597,-5.143464],[105.273215,-5.142931],[105.27276,-5.142813],[105.272408,-5.142082],[105.272207,-5.141328],[105.273579,-5.140667],[105.273556,-5.139886],[105.274611,-5.139173],[105.274977,-5.138125],[105.275104,-5.137184],[105.274962,-5.136102],[105.274557,-5.134854],[105.274446,-5.134174],[105.274347,-5.133444],[105.274474,-5.132399],[105.274445,-5.131917],[105.274736,-5.131688],[105.274873,-5.131417],[105.275229,-5.131443],[105.27555,-5.131323],[105.276047,-5.131414],[105.276459,-5.131134],[105.276969,-5.13128],[105.277525,-5.131173],[105.27778,-5.130847],[105.278228,-5.130928],[105.278261,-5.130282],[105.278351,-5.129901],[105.278298,-5.12926],[105.278573,-5.128734],[105.278521,-5.127867],[105.278996,-5.127437],[105.279063,-5.127035],[105.279203,-5.126546],[105.27941,-5.126083],[105.280073,-5.126007],[105.280438,-5.125637],[105.281149,-5.125177],[105.281372,-5.124817],[105.281451,-5.124563],[105.281707,-5.124428],[105.281668,-5.124178],[105.2816,-5.123721],[105.28173,-5.123335],[105.281815,-5.123068],[105.282,-5.122883],[105.281787,-5.12271],[105.282009,-5.12237],[105.282166,-5.121995],[105.282398,-5.121654],[105.282751,-5.121131],[105.282711,-5.120916],[105.283266,-5.120793],[105.283776,-5.120355],[105.283947,-5.120642],[105.284137,-5.12074],[105.284353,-5.120263],[105.284779,-5.12026],[105.28522,-5.120106],[105.285385,-5.119799],[105.285761,-5.119688],[105.285949,-5.119326],[105.286332,-5.119053],[105.286557,-5.118674],[105.28675,-5.118249],[105.286865,-5.117802],[105.287156,-5.117551],[105.287335,-5.117342],[105.28733,-5.117074],[105.287398,-5.116595],[105.287666,-5.116408],[105.287575,-5.115942],[105.28763,-5.11559],[105.287705,-5.115032],[105.287928,-5.114657],[105.288469,-5.114323],[105.288924,-5.11413],[105.289299,-5.113567],[105.289503,-5.112905],[105.289491,-5.112283],[105.289631,-5.111464],[105.290152,-5.111144],[105.290668,-5.110623],[105.29119,-5.109929],[105.290909,-5.109198],[105.290862,-5.1088],[105.291691,-5.109102],[105.292497,-5.108997],[105.292994,-5.108948],[105.293826,-5.108829],[105.294096,-5.108986]]]}},{"type":"Feature","properties":{"KECAMATAN":"METRO TIMUR"},"geometry":{"type":"Polygon","coordinates":[[[105.337812,-5.0986],[105.339109,-5.09832],[105.339998,-5.098068],[105.340826,-5.098139],[105.341684,-5.098311],[105.342337,-5.098737],[105.342825,-5.099033],[105.343493,-5.099313],[105.34421,-5.099438],[105.344593,-5.099609],[105.344763,-5.100106],[105.344923,-5.100737],[105.345274,-5.101193],[105.345903,-5.101464],[105.346314,-5.102047],[105.346943,-5.102594],[105.347451,-5.103029],[105.347842,-5.103403],[105.34831,-5.103994],[105.348568,-5.104868],[105.348799,-5.106022],[105.348999,-5.107227],[105.348921,-5.107598],[105.349055,-5.108463],[105.34828,-5.108867],[105.347577,-5.108683],[105.346968,-5.109141],[105.346176,-5.10925],[105.345625,-5.109149],[105.343572,-5.110022],[105.343341,-5.110884],[105.342554,-5.112377],[105.341601,-5.113927],[105.340053,-5.112855],[105.338795,-5.113161],[105.337832,-5.112711],[105.336397,-5.11215],[105.335888,-5.113146],[105.334504,-5.115789],[105.33213,-5.11747],[105.331415,-5.119495],[105.331244,-5.121295],[105.329926,-5.12123],[105.329216,-5.121427],[105.328066,-5.120861],[105.327275,-5.121321],[105.326866,-5.122241],[105.326408,-5.123272],[105.325709,-5.124708],[105.325569,-5.125225],[105.324943,-5.126037],[105.324925,-5.126519],[105.324538,-5.127275],[105.324488,-5.127851],[105.324589,-5.128457],[105.3244,-5.129277],[105.323923,-5.129996],[105.323172,-5.131027],[105.322418,-5.131922],[105.322563,-5.132538],[105.323627,-5.133587],[105.323924,-5.134231],[105.324371,-5.134728],[105.326338,-5.136135],[105.327652,-5.135589],[105.328947,-5.135497],[105.330099,-5.134691],[105.330314,-5.136532],[105.330018,-5.138128],[105.330182,-5.138687],[105.330826,-5.139137],[105.330996,-5.13951],[105.331263,-5.140127],[105.331335,-5.140713],[105.331964,-5.141571],[105.332477,-5.141996],[105.332318,-5.142927],[105.332572,-5.143792],[105.332882,-5.144415],[105.333435,-5.144908],[105.334011,-5.145625],[105.334158,-5.146155],[105.333845,-5.146388],[105.333251,-5.146787],[105.333123,-5.14733],[105.33364,-5.147352],[105.334453,-5.147233],[105.334523,-5.147788],[105.33443,-5.148629],[105.334706,-5.149215],[105.334976,-5.149622],[105.334545,-5.14981],[105.334271,-5.150043],[105.333898,-5.150404],[105.333435,-5.150867],[105.333386,-5.151412],[105.333993,-5.151976],[105.333875,-5.152406],[105.333001,-5.152871],[105.332392,-5.152883],[105.331419,-5.152308],[105.330684,-5.152646],[105.329621,-5.152951],[105.329738,-5.153653],[105.329011,-5.153793],[105.328896,-5.154024],[105.329412,-5.154715],[105.328807,-5.155312],[105.327924,-5.155677],[105.327315,-5.156127],[105.326951,-5.155822],[105.326718,-5.155601],[105.326281,-5.155359],[105.325809,-5.155028],[105.325347,-5.154849],[105.324917,-5.15464],[105.324401,-5.154261],[105.324555,-5.153836],[105.324198,-5.153349],[105.323501,-5.153097],[105.322703,-5.153118],[105.322167,-5.152762],[105.321624,-5.152583],[105.321236,-5.152367],[105.32067,-5.152391],[105.320219,-5.152387],[105.319868,-5.152427],[105.319527,-5.151907],[105.319039,-5.151992],[105.318533,-5.151528],[105.318331,-5.150591],[105.318161,-5.150797],[105.317765,-5.151282],[105.317344,-5.1513],[105.316833,-5.151229],[105.316102,-5.14998],[105.315349,-5.14845],[105.315517,-5.147806],[105.315448,-5.147441],[105.315176,-5.146768],[105.31463,-5.146487],[105.313889,-5.146318],[105.313671,-5.145487],[105.313498,-5.144734],[105.313001,-5.143964],[105.31273,-5.143561],[105.312206,-5.143856],[105.31191,-5.143244],[105.3117,-5.142708],[105.311703,-5.142398],[105.311471,-5.141858],[105.311552,-5.141356],[105.311794,-5.140968],[105.311742,-5.14058],[105.3116,-5.14033],[105.31181,-5.139956],[105.311753,-5.139559],[105.312151,-5.139599],[105.312061,-5.139225],[105.312526,-5.138667],[105.312468,-5.137939],[105.312229,-5.137485],[105.312422,-5.137089],[105.312302,-5.136888],[105.312339,-5.136385],[105.312626,-5.135958],[105.312972,-5.135773],[105.313255,-5.135197],[105.313315,-5.134438],[105.313176,-5.1336],[105.31294,-5.133175],[105.313122,-5.132521],[105.313055,-5.131958],[105.31315,-5.131191],[105.312581,-5.130854],[105.311549,-5.130657],[105.311007,-5.130024],[105.310427,-5.130553],[105.309686,-5.130924],[105.308984,-5.130918],[105.308033,-5.130988],[105.306736,-5.13089],[105.307026,-5.12868],[105.307258,-5.126423],[105.307416,-5.124831],[105.307559,-5.123144],[105.308878,-5.123204],[105.309473,-5.122096],[105.309911,-5.121294],[105.31038,-5.120389],[105.311586,-5.119851],[105.311469,-5.119173],[105.311437,-5.118552],[105.311674,-5.116481],[105.311679,-5.112096],[105.310233,-5.111653],[105.313289,-5.108152],[105.314631,-5.106586],[105.315919,-5.106746],[105.31738,-5.105997],[105.318298,-5.106409],[105.319336,-5.108961],[105.320284,-5.108056],[105.320947,-5.107857],[105.322576,-5.107462],[105.32432,-5.107032],[105.324857,-5.106979],[105.32589,-5.107118],[105.327332,-5.106323],[105.328695,-5.105918],[105.329309,-5.105671],[105.330421,-5.104761],[105.331299,-5.103576],[105.332588,-5.102009],[105.333614,-5.101513],[105.334822,-5.100857],[105.336137,-5.0996],[105.336523,-5.098426],[105.337659,-5.098567],[105.337812,-5.0986]]]}},{"type":"Feature","properties":{"KECAMATAN":"METRO PUSAT"},"geometry":{"type":"Polygon","coordinates":[[[105.321918,-5.088841],[105.322543,-5.089828],[105.323236,-5.089782],[105.325116,-5.088378],[105.325725,-5.088625],[105.325987,-5.089901],[105.32543,-5.090776],[105.325225,-5.091519],[105.32588,-5.0921],[105.326814,-5.092079],[105.328271,-5.091685],[105.328961,-5.092042],[105.329456,-5.092394],[105.329784,-5.092422],[105.330209,-5.092296],[105.330985,-5.091938],[105.331743,-5.091174],[105.332101,-5.090894],[105.332415,-5.091155],[105.332805,-5.091254],[105.333153,-5.091057],[105.333735,-5.091151],[105.333945,-5.091289],[105.334691,-5.091029],[105.334905,-5.091682],[105.335029,-5.093291],[105.335345,-5.094799],[105.335798,-5.09533],[105.336212,-5.096287],[105.336483,-5.097353],[105.336523,-5.098426],[105.336202,-5.099426],[105.335292,-5.100575],[105.333805,-5.101288],[105.333105,-5.101725],[105.332184,-5.10242],[105.33108,-5.103926],[105.330313,-5.104898],[105.329309,-5.105671],[105.328798,-5.105919],[105.32749,-5.106271],[105.326158,-5.106958],[105.325381,-5.106995],[105.324644,-5.106966],[105.324053,-5.107024],[105.322479,-5.107486],[105.320947,-5.107857],[105.32033,-5.108039],[105.319471,-5.10875],[105.318688,-5.107367],[105.317739,-5.106017],[105.31673,-5.106356],[105.315667,-5.106778],[105.314605,-5.106615],[105.313289,-5.108152],[105.310479,-5.111349],[105.310108,-5.112216],[105.311688,-5.115749],[105.311632,-5.117064],[105.311474,-5.118818],[105.31146,-5.119225],[105.311611,-5.119929],[105.31038,-5.120389],[105.309912,-5.121285],[105.309843,-5.121706],[105.308928,-5.12259],[105.308389,-5.123094],[105.307523,-5.123614],[105.307399,-5.125003],[105.307256,-5.126438],[105.307026,-5.12868],[105.306753,-5.130776],[105.306064,-5.131093],[105.305266,-5.131104],[105.304666,-5.130991],[105.304217,-5.130667],[105.303407,-5.129764],[105.30291,-5.129042],[105.301677,-5.129149],[105.300985,-5.129499],[105.300654,-5.129651],[105.300308,-5.129865],[105.299889,-5.129562],[105.299554,-5.129081],[105.298719,-5.128189],[105.298429,-5.127382],[105.298714,-5.126632],[105.298867,-5.125897],[105.298538,-5.125],[105.298531,-5.12462],[105.29848,-5.123965],[105.29846,-5.122938],[105.298612,-5.121753],[105.298384,-5.120941],[105.298358,-5.120165],[105.298211,-5.118994],[105.298648,-5.118377],[105.298601,-5.117989],[105.298461,-5.117742],[105.298181,-5.117595],[105.297704,-5.117012],[105.296768,-5.116602],[105.295729,-5.116263],[105.295885,-5.116062],[105.295753,-5.115386],[105.29588,-5.114894],[105.295983,-5.113867],[105.296102,-5.11279],[105.295777,-5.110571],[105.294992,-5.109536],[105.293887,-5.108849],[105.293288,-5.108795],[105.292673,-5.108999],[105.292069,-5.109097],[105.291449,-5.109045],[105.290698,-5.108932],[105.290481,-5.108774],[105.289818,-5.107965],[105.289317,-5.107931],[105.28861,-5.107729],[105.288417,-5.107537],[105.288192,-5.10724],[105.287673,-5.106842],[105.287534,-5.10631],[105.287756,-5.105697],[105.288099,-5.105334],[105.28865,-5.105054],[105.289191,-5.104735],[105.289811,-5.104418],[105.2902,-5.104191],[105.290453,-5.103743],[105.291149,-5.103314],[105.291584,-5.103023],[105.292075,-5.102792],[105.292474,-5.10254],[105.292814,-5.102312],[105.293307,-5.102085],[105.293852,-5.101901],[105.2946,-5.101539],[105.295252,-5.101209],[105.295688,-5.10103],[105.296247,-5.100781],[105.296733,-5.100726],[105.297209,-5.100481],[105.297835,-5.100352],[105.29841,-5.100168],[105.298474,-5.09948],[105.298781,-5.099346],[105.298748,-5.098985],[105.298726,-5.098629],[105.298959,-5.098134],[105.299368,-5.098053],[105.29961,-5.0978],[105.299803,-5.097733],[105.299705,-5.097283],[105.299288,-5.096933],[105.298985,-5.096885],[105.299085,-5.096664],[105.299451,-5.096377],[105.299146,-5.096153],[105.299012,-5.095689],[105.299146,-5.095137],[105.299158,-5.094654],[105.299302,-5.094324],[105.299382,-5.093695],[105.299581,-5.09308],[105.299809,-5.092583],[105.300156,-5.092304],[105.300362,-5.092052],[105.300725,-5.091676],[105.301278,-5.091593],[105.30152,-5.091497],[105.301985,-5.091561],[105.302515,-5.091461],[105.30281,-5.09127],[105.30314,-5.091162],[105.303501,-5.090959],[105.303576,-5.090548],[105.303838,-5.090312],[105.304678,-5.090044],[105.304981,-5.090303],[105.305375,-5.090578],[105.30596,-5.090539],[105.306122,-5.090885],[105.306477,-5.090864],[105.306725,-5.090785],[105.307161,-5.0907],[105.307651,-5.090663],[105.308085,-5.090414],[105.308506,-5.090427],[105.308817,-5.090475],[105.308926,-5.090263],[105.309099,-5.089805],[105.309405,-5.089457],[105.309842,-5.08961],[105.310073,-5.089778],[105.310174,-5.089422],[105.310503,-5.089021],[105.310878,-5.089069],[105.310971,-5.088757],[105.311335,-5.088687],[105.311451,-5.088483],[105.311334,-5.088229],[105.311672,-5.088037],[105.311959,-5.08804],[105.311761,-5.087741],[105.311744,-5.087542],[105.312044,-5.087586],[105.312541,-5.087653],[105.312796,-5.08804],[105.313009,-5.088315],[105.313182,-5.088595],[105.313362,-5.088708],[105.31358,-5.088863],[105.314077,-5.089256],[105.314817,-5.089419],[105.316653,-5.08874],[105.317832,-5.088417],[105.318168,-5.088868],[105.318681,-5.088843],[105.319457,-5.088537],[105.320174,-5.088157],[105.320655,-5.087689],[105.320792,-5.087273],[105.320912,-5.087201],[105.321499,-5.088153],[105.321918,-5.088841]]]}},{"type":"Feature","properties":{"KECAMATAN":"METRO UTARA"},"geometry":{"type":"Polygon","coordinates":[[[105.316989,-5.061876],[105.312733,-5.066999],[105.309188,-5.068655],[105.308987,-5.072125],[105.315255,-5.073547],[105.314805,-5.075748],[105.317346,-5.076252],[105.318693,-5.075967],[105.319348,-5.07534],[105.320564,-5.07416],[105.322999,-5.072447],[105.32424,-5.072523],[105.32521,-5.071865],[105.326496,-5.072049],[105.328326,-5.070997],[105.329245,-5.070699],[105.330125,-5.071402],[105.331104,-5.071404],[105.332058,-5.072051],[105.332896,-5.071694],[105.333236,-5.07232],[105.335015,-5.071815],[105.335832,-5.072001],[105.336587,-5.071293],[105.337248,-5.07148],[105.338302,-5.071712],[105.337912,-5.071087],[105.338522,-5.070969],[105.339471,-5.071309],[105.340407,-5.070086],[105.341813,-5.070422],[105.342401,-5.071009],[105.342389,-5.070009],[105.343182,-5.069839],[105.343614,-5.069478],[105.343549,-5.068358],[105.343888,-5.067404],[105.343043,-5.066777],[105.344067,-5.066612],[105.344945,-5.065899],[105.345549,-5.065315],[105.346108,-5.065114],[105.346325,-5.064354],[105.347299,-5.063784],[105.347662,-5.063483],[105.348494,-5.063242],[105.348869,-5.062658],[105.349876,-5.062706],[105.350025,-5.063439],[105.351274,-5.063197],[105.352221,-5.063597],[105.353061,-5.063685],[105.353463,-5.063418],[105.353264,-5.064341],[105.35408,-5.064019],[105.354429,-5.063996],[105.355377,-5.064561],[105.355242,-5.065304],[105.356284,-5.065435],[105.35601,-5.066262],[105.356849,-5.066446],[105.356699,-5.066898],[105.3574,-5.067664],[105.357315,-5.068915],[105.357885,-5.068725],[105.359086,-5.069481],[105.358438,-5.070231],[105.357629,-5.071662],[105.35667,-5.072518],[105.35566,-5.072208],[105.354291,-5.073041],[105.353881,-5.073979],[105.353078,-5.075133],[105.352939,-5.076477],[105.351644,-5.076931],[105.350614,-5.077811],[105.350703,-5.079146],[105.350322,-5.080531],[105.349266,-5.081582],[105.348759,-5.082754],[105.348043,-5.083005],[105.347331,-5.083402],[105.346509,-5.084142],[105.344706,-5.084424],[105.344042,-5.086363],[105.343194,-5.087256],[105.342384,-5.087579],[105.341021,-5.089051],[105.339461,-5.090043],[105.337652,-5.090189],[105.334691,-5.091029],[105.333632,-5.091134],[105.33248,-5.091214],[105.331538,-5.091449],[105.329839,-5.092431],[105.328847,-5.092038],[105.326219,-5.092096],[105.32543,-5.090776],[105.325482,-5.088321],[105.322593,-5.089909],[105.320953,-5.087251],[105.320552,-5.087786],[105.319054,-5.088727],[105.317832,-5.088417],[105.314549,-5.089402],[105.313404,-5.088684],[105.312985,-5.088185],[105.312263,-5.087602],[105.311809,-5.087787],[105.311421,-5.08811],[105.311335,-5.088687],[105.31071,-5.089115],[105.310075,-5.089777],[105.309297,-5.089563],[105.308864,-5.090449],[105.308035,-5.09045],[105.306947,-5.090756],[105.306122,-5.090885],[105.305269,-5.090577],[105.303848,-5.090308],[105.303397,-5.091053],[105.302622,-5.091389],[105.30149,-5.091495],[105.300525,-5.0918],[105.299809,-5.092583],[105.299276,-5.093812],[105.29912,-5.09503],[105.299309,-5.096195],[105.298966,-5.096814],[105.299728,-5.097346],[105.299465,-5.097957],[105.298726,-5.098629],[105.298672,-5.099359],[105.298138,-5.100275],[105.296569,-5.100772],[105.29538,-5.101199],[105.293746,-5.101933],[105.292599,-5.102409],[105.291584,-5.103023],[105.29031,-5.103948],[105.289234,-5.104711],[105.287939,-5.105423],[105.282868,-5.103429],[105.280015,-5.103985],[105.279314,-5.104561],[105.278011,-5.105588],[105.276776,-5.106846],[105.271531,-5.105007],[105.27087,-5.104139],[105.26963,-5.103634],[105.269272,-5.102938],[105.268981,-5.102359],[105.268573,-5.101254],[105.268836,-5.098057],[105.269964,-5.09571],[105.271662,-5.095276],[105.273764,-5.095053],[105.275643,-5.094319],[105.276481,-5.092715],[105.278016,-5.092152],[105.279287,-5.090938],[105.280868,-5.089985],[105.280337,-5.088886],[105.279229,-5.087169],[105.278255,-5.085554],[105.278207,-5.084521],[105.28013,-5.083033],[105.282343,-5.082948],[105.283349,-5.08118],[105.285036,-5.080287],[105.287012,-5.078843],[105.28781,-5.078094],[105.288503,-5.077416],[105.289243,-5.077071],[105.290174,-5.07692],[105.29227,-5.075082],[105.294438,-5.073472],[105.295684,-5.072278],[105.296078,-5.071293],[105.296564,-5.069942],[105.297249,-5.06862],[105.297843,-5.067798],[105.298824,-5.067359],[105.299492,-5.066315],[105.300128,-5.065621],[105.300647,-5.064589],[105.301253,-5.063841],[105.302011,-5.063335],[105.302488,-5.06241],[105.303318,-5.062279],[105.304263,-5.062025],[105.305045,-5.062223],[105.306066,-5.061354],[105.307599,-5.060583],[105.309097,-5.0594],[105.310085,-5.058096],[105.311254,-5.057033],[105.312849,-5.056052],[105.314139,-5.055846],[105.315567,-5.055396],[105.316708,-5.055411],[105.317968,-5.059276],[105.316989,-5.061876]]]}},{"type":"Feature","properties":{"KECAMATAN":"METRO SELATAN"},"geometry":{"type":"Polygon","coordinates":[[[105.309626,-5.136577],[105.312297,-5.13784],[105.312438,-5.138868],[105.311902,-5.139581],[105.311835,-5.140118],[105.311638,-5.140611],[105.311552,-5.141356],[105.311721,-5.142373],[105.311788,-5.143059],[105.312622,-5.143822],[105.313279,-5.144231],[105.313669,-5.146061],[105.31473,-5.146674],[105.315446,-5.147451],[105.315349,-5.14845],[105.316752,-5.151263],[105.317694,-5.151316],[105.318255,-5.150661],[105.318808,-5.151722],[105.31969,-5.151958],[105.3203,-5.152412],[105.321307,-5.1524],[105.322167,-5.152762],[105.32337,-5.153088],[105.324409,-5.153735],[105.324725,-5.154516],[105.325572,-5.155004],[105.326414,-5.155447],[105.327138,-5.155901],[105.327112,-5.156598],[105.327598,-5.15821],[105.327255,-5.159444],[105.328122,-5.160659],[105.328875,-5.161522],[105.328248,-5.162623],[105.327662,-5.16336],[105.327653,-5.164367],[105.328266,-5.165287],[105.327376,-5.165473],[105.327293,-5.166036],[105.328,-5.167112],[105.329359,-5.167067],[105.329602,-5.167742],[105.328965,-5.167937],[105.328381,-5.168009],[105.327661,-5.167974],[105.327003,-5.167814],[105.326473,-5.16761],[105.326021,-5.167342],[105.325641,-5.166917],[105.325375,-5.166648],[105.325091,-5.166187],[105.324847,-5.165814],[105.324405,-5.165291],[105.323982,-5.165054],[105.323459,-5.164854],[105.323063,-5.164641],[105.322548,-5.164586],[105.322077,-5.164917],[105.321986,-5.165464],[105.321938,-5.166063],[105.321845,-5.166691],[105.321706,-5.167395],[105.321428,-5.167929],[105.321063,-5.168327],[105.320605,-5.168634],[105.320022,-5.168953],[105.31921,-5.169404],[105.318736,-5.169521],[105.318294,-5.169876],[105.31792,-5.170494],[105.317505,-5.171167],[105.317168,-5.171711],[105.316869,-5.172187],[105.316523,-5.172426],[105.316063,-5.172368],[105.315483,-5.172115],[105.315073,-5.17181],[105.314533,-5.171459],[105.314128,-5.171221],[105.313782,-5.170989],[105.31336,-5.170689],[105.313007,-5.170394],[105.312504,-5.170246],[105.312036,-5.170276],[105.311634,-5.170349],[105.311216,-5.170392],[105.310807,-5.170497],[105.310436,-5.17052],[105.309886,-5.170532],[105.309436,-5.170481],[105.308806,-5.170415],[105.308282,-5.170376],[105.307897,-5.170348],[105.307476,-5.170314],[105.307043,-5.170287],[105.306659,-5.17034],[105.306283,-5.170449],[105.306019,-5.170545],[105.305698,-5.170662],[105.305363,-5.170805],[105.305254,-5.171025],[105.305263,-5.171295],[105.305433,-5.171546],[105.305697,-5.171869],[105.30601,-5.172179],[105.306366,-5.172472],[105.306488,-5.172853],[105.306444,-5.173197],[105.306398,-5.173526],[105.306269,-5.173837],[105.305916,-5.173897],[105.305525,-5.173922],[105.30513,-5.173949],[105.304712,-5.173973],[105.304344,-5.174015],[105.304004,-5.174088],[105.303686,-5.1742],[105.303388,-5.174228],[105.302932,-5.174302],[105.302556,-5.174465],[105.302422,-5.174786],[105.302203,-5.175229],[105.301937,-5.175686],[105.301707,-5.176081],[105.301549,-5.1767],[105.301339,-5.177629],[105.300875,-5.178323],[105.300238,-5.178748],[105.299862,-5.178381],[105.299739,-5.17776],[105.299689,-5.177016],[105.299677,-5.176402],[105.299762,-5.175498],[105.299756,-5.174796],[105.299766,-5.174394],[105.29985,-5.173917],[105.299826,-5.173354],[105.299668,-5.172928],[105.299504,-5.172517],[105.299459,-5.172302],[105.298987,-5.172281],[105.298512,-5.172449],[105.298086,-5.172868],[105.297638,-5.173252],[105.297169,-5.173529],[105.296816,-5.174005],[105.29642,-5.174237],[105.295666,-5.174255],[105.294692,-5.174076],[105.293867,-5.173851],[105.293013,-5.173467],[105.292351,-5.172985],[105.291624,-5.172509],[105.290981,-5.172102],[105.290449,-5.17158],[105.290426,-5.170963],[105.290621,-5.170379],[105.29094,-5.169868],[105.290975,-5.169553],[105.290793,-5.169333],[105.29076,-5.16924],[105.290488,-5.169201],[105.290026,-5.169357],[105.289672,-5.169594],[105.289338,-5.169739],[105.288726,-5.169958],[105.288092,-5.170297],[105.28763,-5.170585],[105.286991,-5.170749],[105.287115,-5.170025],[105.28646,-5.169538],[105.285996,-5.169543],[105.285086,-5.169532],[105.28499,-5.169224],[105.284389,-5.169335],[105.283485,-5.169424],[105.282498,-5.168878],[105.281661,-5.168994],[105.281335,-5.169568],[105.28052,-5.170077],[105.280364,-5.169575],[105.279582,-5.169952],[105.279378,-5.169364],[105.279825,-5.168839],[105.279217,-5.167798],[105.278719,-5.167027],[105.278467,-5.166175],[105.278336,-5.165041],[105.278272,-5.164255],[105.27803,-5.163847],[105.277403,-5.163526],[105.276956,-5.16344],[105.27644,-5.162945],[105.275576,-5.162875],[105.274756,-5.158761],[105.278186,-5.158606],[105.279872,-5.157],[105.281632,-5.155426],[105.284559,-5.15068],[105.287151,-5.148901],[105.288421,-5.147374],[105.290819,-5.148883],[105.293277,-5.145683],[105.294549,-5.143231],[105.295764,-5.140579],[105.296838,-5.138074],[105.299298,-5.138521],[105.302187,-5.137582],[105.304256,-5.137654],[105.305249,-5.137908],[105.307872,-5.136344],[105.309626,-5.136577]]]}}]};
+
+const kecamatanColors = {
+    'METRO BARAT'   : '#1a6600',
+    'METRO TIMUR'   : '#00308F',
+    'METRO PUSAT'   : '#800000',
+    'METRO UTARA'   : '#b35900',
+    'METRO SELATAN' : '#5c3d00'
+};
+
+L.geoJSON(batasMetroGeoJSON, {
+    style: function(feature) {
+        const nama = feature.properties.KECAMATAN;
+        return {
+            color: '#800000',
+            weight: 2,
+            opacity: 0.9,
+            fillColor: kecamatanColors[nama] || '#800000',
+            fillOpacity: 0.10,
+            dashArray: '5, 5'
+        };
+    },
+    onEachFeature: function(feature, layer) {
+        layer.bindTooltip('<strong>' + feature.properties.KECAMATAN + '</strong>', {
+            permanent: false,
+            sticky: true,
+            direction: 'center',
+            className: 'kecamatan-tooltip'
+        });
+    }
+}).addTo(map);
+    </script>
+</body>
+</html>
+
+
